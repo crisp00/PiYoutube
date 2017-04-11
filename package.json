@@ -1,6 +1,6 @@
 {
-  "name": "PiYoutubeQueue",
-  "version": "0.0.1",
+  "name": "piyq",
+  "version": "0.0.2",
   "description": "Youtube playback and public sharing for the Volumio",
   "main": "index.js",
   "scripts": {

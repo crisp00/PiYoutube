@@ -3,7 +3,7 @@
   "useAtomicWrites": false,
   "deleteLocal": true,
   "hostname": "192.168.1.97",
-  "target": "/data/plugins/music_service/PiYoutubeQueue",
+  "target": "/data/plugins/music_service/piyq",
   "ignore": [
     ".remote-sync.json",
     ".git/**"

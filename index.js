@@ -1,7 +1,6 @@
 'use strict';
 
 var ytdl = require('ytdl-core');
-const fs = require('fs');
 var libQ = require('kew');
 
 module.exports = PiYoutubeQueue;
@@ -54,7 +53,7 @@ PiYoutubeQueue.prototype.onUninstall = function () {
 PiYoutubeQueue.prototype.getUIConfig = function () {
 	var self = this;
 
-	return {success: true, plugin: "example_plugin"};
+	return {success: true, plugin: "piyq"};
 };
 
 PiYoutubeQueue.prototype.setUIConfig = function (data) {
@@ -93,42 +92,27 @@ PiYoutubeQueue.prototype.setAdditionalConf = function () {
 	//Perform your tasks to set additional config data here
 };
 
-PiYoutubeQueue.prototype.play2 = function(uri){
-	var self = this;
-
-	ytdl.getInfo(uri, { filter: "audioonly"}, function(err, info){
-		if(err){
-			console.log("Error opening Youtube stream, video is probably not valid.");
-		}else {
-			self.commandRouter.addQueueItems({uri: uri, service: 'youtube', name: info.title, type: 'track'});
-		}
-		});
-
-}
-
 PiYoutubeQueue.prototype.pause = function(){
 	var self = this;
 	this.logger.info("PiYoutubeQueue::pause");
 
-	return self.mpdPlugin.sendMpdCommand('pause',[]);
+	return self.commandRouter.volumioPause();
 };
 
 
-PiYoutubeQueue.prototype.play = function(vuri){
+PiYoutubeQueue.prototype.addFromVideo = function(vuri){
   var self = this;
-  this.logger.info("PiYoutubeQueue::play");
+  this.logger.info("PiYoutubeQueue::addFromVideo");
 	self.commandRouter.addQueueItems([{
 		uri: vuri,
-		service:"PiYoutubeQueue"
+		service: "piyq"
 	}]);
 };
 
 PiYoutubeQueue.prototype.stop = function(){
 	this.logger.info("PiYoutubeQueue::stop");
 
-
-	this.mpdPlugin.sendMpdCommand('stop',[]);
-	return libQ.resolve();
+	return this.commandRouter.volumioStop();;
 }
 
 PiYoutubeQueue.prototype.explodeUri = function(uri) {
@@ -144,9 +128,12 @@ PiYoutubeQueue.prototype.explodeUri = function(uri) {
 			console.log(info.title)
 			defer.resolve({
 				uri: info["formats"][0]["url"],
-				service: 'PiYoutubeQueue',
-				name: info.title,
+				service: 'piyq',
+				name: info["title"],
+				title: info["title"],
+				duration: info["length_seconds"],
 				type: 'track',
+				trackType: "flac",
 				albumart: info["thumbnail_url"]
 			});
 		}
@@ -157,7 +144,7 @@ PiYoutubeQueue.prototype.explodeUri = function(uri) {
 
 PiYoutubeQueue.prototype.addToBrowseSources = function () {
 
-	var data = {name: 'Youtube', uri: 'PiYoutubeQueue', plugin_type:'music_service', plugin_name:'PiYoutubeQueue'};
+	var data = {name: 'Youtube', uri: 'PiYoutubeQueue', plugin_type:'music_service', plugin_name:'piyq'};
 	return this.commandRouter.volumioAddToBrowseSources(data);
 };
 
