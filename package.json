@@ -1,0 +1,19 @@
+{
+  "name": "PiYoutubeQueue",
+  "version": "0.0.1",
+  "description": "Youtube playback and public sharing for the Volumio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Cris Pintea <cris@pintea.net>",
+  "license": "MIT",
+  "volumio_info": {
+    "prettyName": "Pi Youtube Playback",
+    "plugin_type": "music_service",
+    "boot_priority":10
+  },
+  "dependencies": {
+    "ytdl-core": "0.11.1"
+  }
+}
