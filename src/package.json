@@ -1,0 +1,23 @@
+{
+  "name": "piyq",
+  "version": "0.0.2",
+  "description": "Youtube playback and public sharing for the Volumio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Cris Pintea <cris@pintea.net>",
+  "contributors":[{
+    "name":"Torello Querci"
+  }],
+  "license": "MIT",
+  "volumio_info": {
+    "prettyName": "PiYoutube",
+    "plugin_type": "music_service",
+    "boot_priority":10
+  },
+  "dependencies": {
+    "ytdl-core": "0.11.1",
+    "mpd":"1.3.0"
+  }
+}
