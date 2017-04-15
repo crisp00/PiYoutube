@@ -25,6 +25,8 @@ PiYoutube.prototype.onVolumioStart = function () {
 PiYoutube.prototype.onStart = function(){
   //Getting the mdp plugin
   this.mpdPlugin = this.commandRouter.pluginManager.getPlugin('music_service', 'mpd');
+	this.logger.info("Youtube::onStart Adding to browse sources");
+	this.addToBrowseSources();
  	return libQ.resolve();
 }
 
@@ -55,7 +57,7 @@ PiYoutube.prototype.onUninstall = function () {
 PiYoutube.prototype.getUIConfig = function () {
 	var self = this;
 
-	return {success: true, plugin: "piyq"};
+	return {success: true, plugin: "youtube"};
 };
 
 PiYoutube.prototype.setUIConfig = function (data) {
@@ -107,7 +109,7 @@ PiYoutube.prototype.addFromVideo = function(vuri){
   this.logger.info("PiYoutube::addFromVideo");
 	self.commandRouter.addQueueItems([{
 		uri: vuri,
-		service: "piyq"
+		service: "youtube"
 	}]);
 };
 
@@ -136,7 +138,7 @@ PiYoutube.prototype.explodeUri = function(uri) {
 				duration: info["length_seconds"],
 				type: 'track',
 				trackType: "YouTube",
-				albumart: info["thumbnail_url"]
+				albumart: info["thumbnail_url"].replace("default", "0")
 			});
 		}
 	})
@@ -149,9 +151,8 @@ PiYoutube.prototype.getState = function(){
 };
 
 PiYoutube.prototype.addToBrowseSources = function () {
-
-	var data = {name: 'Youtube', uri: 'PiYoutube', plugin_type:'music_service', plugin_name:'piyq'};
-	return this.commandRouter.volumioAddToBrowseSources(data);
+	var data = {name: 'Youtube', uri: 'youtube',plugin_type:'music_service',plugin_name:'youtube'};
+	this.commandRouter.volumioAddToBrowseSources(data);
 };
 
 PiYoutube.prototype.play = function(){

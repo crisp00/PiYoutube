@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "Installing PiYoutube"
+echo "Installing youtube"
 
 echo "plugininstallend"

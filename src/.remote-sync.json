@@ -4,7 +4,7 @@
   "deleteLocal": true,
   "hostname": "192.168.1.97",
   "port": "22",
-  "target": "/data/plugins/music_service/piyq/",
+  "target": "/data/plugins/music_service/youtube/",
   "ignore": [
     ".remote-sync.json",
     ".git/**"
