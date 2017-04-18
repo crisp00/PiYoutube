@@ -2,7 +2,15 @@
 
 var ytdl = require('ytdl-core');
 var libQ = require('kew');
+var gapi = require('googleapis');
+var yt = gapi.youtube('v3');
 
+
+var gapi_key = "AIzaSyBI8Z5gARDDBGKLLY-0ncLTWWXVZLInrzU";
+
+
+var r;
+var n;
 
 this.state = {};
 
@@ -104,14 +112,62 @@ PiYoutube.prototype.pause = function(){
 };
 
 
-PiYoutube.prototype.addFromVideo = function(vuri){
+PiYoutube.prototype.add	 = function(vuri){
   var self = this;
   this.logger.info("PiYoutube::addFromVideo");
-	self.commandRouter.addQueueItems([{
-		uri: vuri,
+
+	if(vuri.includes("list=")){
+		var playlistID = vuri.toString().split("list=")[1].split("&")[0];
+		this.addPlaylist(playlistID);
+	}else{
+		this.addVideo(vuri);
+	}
+};
+
+PiYoutube.prototype.addVideo = function(url){
+	return this.commandRouter.addQueueItems([{
+		uri: url,
 		service: "youtube"
 	}]);
-};
+}
+
+PiYoutube.prototype.addPlaylist = function(playlistId){
+	var self = this;
+	yt.playlistItems.list({
+		auth: gapi_key,
+		part: "snippet",
+		maxResults: 50,
+		playlistId: playlistId
+	}, function(err, resp){
+		if(err){
+			self.logger.error(err);
+		}else{
+			var defer = libQ.defer();
+			var p = defer.promise;
+			n = 0;
+			r = resp;
+			self.logger.info(JSON.stringify(resp.items[0].snippet));
+			for(var i = 0; i < resp.items.length; i++){
+				self.logger.info(resp.items[i].snippet.resourceId.videoId);
+				p = p.then(function(){
+					self.logger.info(r.items[n].snippet.resourceId.videoId);
+					var url = "https://youtube.com/watch?v=" + r.items[n].snippet.resourceId.videoId;
+					self.logger.info("PiYoutube::qqq(" + n + ") " + url);
+					n++;
+					return self.commandRouter.addQueueItems([{
+						uri: url,
+						service: "youtube"
+					}]).catch(function(e){
+						self.logger.error(e.message);
+					});
+				}, function(e){
+					self.logger.error(e.stack);
+				});
+			}
+			defer.resolve(resp, 0);
+		}
+	});
+}
 
 PiYoutube.prototype.stop = function(){
 	this.logger.info("PiYoutube::stop");
@@ -126,10 +182,9 @@ PiYoutube.prototype.explodeUri = function(uri) {
 
 	ytdl.getInfo(uri, { filter: "audioonly"}, function(err, info){
 		if(err){
-			console.log("Error opening Youtube stream, video is probably not valid.");
+			defer.reject(new Error("Error opening Youtube stream, video is probably not valid."));
 		}else {
 
-			console.log(info)
 			defer.resolve({
 				uri: info["formats"][0]["url"],
 				service: 'mpd',
