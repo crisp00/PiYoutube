@@ -11,7 +11,8 @@
   "volumio_info": {
     "prettyName": "Youtube Playback",
     "plugin_type": "music_service",
-    "boot_priority":10
+    "boot_priority": 10,
+    "icon": "fa-youtube"
   },
   "dependencies": {
     "ytdl-core": "0.11.1",
