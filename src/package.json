@@ -15,8 +15,9 @@
     "icon": "fa-youtube"
   },
   "dependencies": {
-    "ytdl-core": "0.11.1",
-    "kew":"0.7.0",
-    "googleapis":"19.0.0"
+    "googleapis": "19.0.0",
+    "kew": "0.7.0",
+    "v-conf": "^1.4.0",
+    "ytdl-core": "0.11.1"
   }
 }
