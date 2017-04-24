@@ -6,18 +6,18 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Cris Pintea <cris@pintea.net>, Stefan Lässer <sla89@gmx-topmail.de>",
+  "author": "Cris Pintea <cris@pintea.net>",
   "license": "MIT",
   "volumio_info": {
     "prettyName": "Youtube Playback",
     "plugin_type": "music_service",
-    "boot_priority": 10,
-    "icon": "fa-youtube"
+    "boot_priority":10
   },
   "dependencies": {
-    "googleapis": "19.0.0",
-    "kew": "0.7.0",
-    "v-conf": "^1.4.0",
-    "ytdl-core": "0.11.1"
+    "ytdl-core": "0.11.1",
+    "kew":"0.7.0",
+    "googleapis":"19.0.0",
+    "iso8601-duration":"1.0.6",
+    "v-conf": "^1.4.0"
   }
 }
