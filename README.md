@@ -42,3 +42,4 @@ Authors:
 
 - [Cristian Pintea](http://pintea.net)
 - Torello Querci
+- [Stefan Lässer](https://github.com/sla89)
