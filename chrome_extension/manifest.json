@@ -1,0 +1,39 @@
+{
+  "manifest_version":2,
+
+  "name": "Volumio Youtube",
+  "description": "The Volumio Youtube extension allows you to queue up youtube music to your volumios directly from the watch page!",
+  "version":"0.0.1",
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/watch?v=*", "*://*.youtu.be/*"],
+      "js": ["watch.js"]
+    }
+  ],
+  "background": {
+    "scripts": ["socket.io.js", "bg.js"],
+    "persistent": false
+  },
+  "web_accessible_resources": [
+    "icon.png"
+  ],
+  "page_action" :
+  {
+    "default_icon" : "icon.png",
+    "default_title" : "Send youtube videos to your Volumio!",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "options_ui": {
+    "chrome_style": true,
+    "page": "options.html"
+  },
+  "permissions":[
+    "activeTab",
+    "tabs",
+    "declarativeContent",
+    "storage",
+    "notifications"
+  ]
+}
