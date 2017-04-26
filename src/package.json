@@ -6,11 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Cris Pintea <cris@pintea.net>",
+  "author": "Cris Pintea <cris@pintea.net>, Stefan Laesser <sla89@gmx-topmail.de>",
   "license": "MIT",
   "volumio_info": {
     "prettyName": "Youtube Playback",
     "plugin_type": "music_service",
+    "icon": "fa-youtube",
     "boot_priority":10
   },
   "dependencies": {
