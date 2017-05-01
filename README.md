@@ -36,12 +36,12 @@ Features, ETAs:
   - [x] Searching for videos and playlists
   - [x] Playback videos found in search
   - [x] Add playlist to queue
-	- [x] Displaying trend when opening YouTube in Browse
-	- [ ] Playlist direct playback (click on play)
-	- [ ] Add video/playlist to a Volumio playlist
-	- [ ] Add video/playlist to Volumio favourites
-	- [ ] Login to YouTube account
-	
+  - [x] Displaying trend when opening YouTube in Browse
+  - [ ] Playlist direct playback (click on play)
+  - [ ] Add video/playlist to a Volumio playlist
+  - [ ] Add video/playlist to Volumio favourites
+  - [ ] Login to YouTube account
+
 - [ ] Mobile app integration - 2weeks
 
 
