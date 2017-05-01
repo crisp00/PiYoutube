@@ -21,6 +21,7 @@ function Youtube(context) {
   this.addQueue = [];
   this.trendResults = [];
   this.searchResults = [];
+  this.playlistItems = [];
   this.state = {};
   this.stateMachine = this.commandRouter.stateMachine;
 }
@@ -209,12 +210,14 @@ Youtube.prototype.stop = function() {
 
 Youtube.prototype.handleBrowseUri = function(uri) {
   var self = this;
-  self.logger.debug('handleBrowseUri: ' + uri);
+  self.logger.info('handleBrowseUri: ' + uri);
 
   if (uri.startsWith('youtube')) {
     //root
     if (uri === 'youtube') {
       return self.getTrend();
+    } else if (uri.startsWith('youtube/playlist/')) {
+      return self.getPlaylistItems(uri.split('/').pop());
     }
   }
 
@@ -488,8 +491,6 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
     maxResults: 50
   };
 
-  console.log(request);
-
   if (pageToken != undefined) {
     request.pageToken = pageToken;
   }
@@ -513,6 +514,65 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
             icon: 'fa fa-youtube',
             availableListViews: ['list', 'grid'],
             items: items
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
+}
+
+Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    auth: ytapi_key,
+    playlistId: playlistId,
+    part: "snippet",
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  yt.playlistItems.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      // always load all playlist items
+      var videos = res.items;
+      for (var i = 0; i < videos.length; i++) {
+        self.playlistItems.push(self.parseVideoData(videos[i]));
+      }
+
+      if (res.nextPageToken != undefined) {
+        self.getPlaylistItems(playlistId, res.nextPageToken, deferred);
+      } else {
+        if (self.playlistItems.length > 0) {
+          var items = self.playlistItems.slice(0);
+          self.playlistItems = []; //clean up
+
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: 'youtube'
+              },
+              lists: [{
+                title: 'Youtube Playlist - showing ' + items.length + ' videos',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
           });
         } else {
           deferred.resolve({});
@@ -550,7 +610,6 @@ Youtube.prototype.calcLoadVideoLimit = function(numLoadedVideos, numAvailableVid
     loadVideos = numAvailableVideos;
   }
 
-  self.logger.info('Youtube::calcLoadVideoLimit: ' + loadVideos);
   return loadVideos;
 }
 
@@ -567,36 +626,35 @@ Youtube.prototype.parseVideoData = function(videoData) {
     }
   }
 
-  var url = 'youtube/';
-  var type;
+  var url, type;
 
   if (videoData.kind) {
     switch (videoData.kind) {
       case 'youtube#video':
-        url += 'video/' + videoData.id;
+        url = videoData.id;
         type = 'song';
         break;
       case 'youtube#searchResult':
         switch (videoData.id.kind) {
           case 'youtube#video':
-            url += 'video/' + videoData.id.videoId;
+            url = videoData.id.videoId;
             type = 'song';
             break;
           case 'youtube#playlist':
-            url += 'playlist/' + videoData.id.playlistId;
+            url = 'youtube/playlist/' + videoData.id.playlistId;
             type = 'folder';
             break;
           default:
-            url += 'unhandled-search-kind: ' + videoData.id.kind;
+            url = 'youtube/unhandled-search-kind: ' + videoData.id.kind;
             break;
         }
         break;
       case 'youtube#playlistItem':
-        url += 'video/' + videoData.snippet.resourceId.videoId;
+        url = videoData.snippet.resourceId.videoId;
         type = 'song';
         break;
       default:
-        url += 'unhandled-kind: ' + videoData.kind;
+        url = 'youtube/unhandled-kind: ' + videoData.kind;
         break;
     }
   }
