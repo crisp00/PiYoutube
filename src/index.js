@@ -9,7 +9,6 @@ var dur = require("iso8601-duration");
 var yt = gapis.youtube('v3');
 var ytapi_key = "AIzaSyBI8Z5gARDDBGKLLY-0ncLTWWXVZLInrzU";
 
-
 module.exports = Youtube;
 
 function Youtube(context) {
@@ -20,6 +19,7 @@ function Youtube(context) {
   this.logger = this.context.logger;
   this.configManager = this.context.configManager;
   this.addQueue = [];
+  this.addTrend = [];
   this.state = {};
   this.stateMachine = this.commandRouter.stateMachine;
 }
@@ -170,7 +170,6 @@ Youtube.prototype.addPlaylist = function(playlistId, pageToken) {
       }
     }
   });
-
 }
 
 Youtube.prototype.parseAddQueue = function() {
@@ -207,12 +206,25 @@ Youtube.prototype.stop = function() {
   return this.commandRouter.volumioStop();
 }
 
+Youtube.prototype.handleBrowseUri = function(uri) {
+  var self = this;
+  self.logger.debug('handleBrowseUri: ' + uri);
+
+  if (uri.startsWith('youtube')) {
+    //root
+    if (uri === 'youtube') {
+      return self.getTrend();
+    }
+  }
+
+  return libQ.reject();
+};
+
 Youtube.prototype.explodeUri = function(videoId) {
   var self = this;
   this.logger.info("Youtube::explodeUri " + "https://youtube.com/oembed?format=json&url=" + videoId);
 
   var deferred = libQ.defer();
-
 
   yt.videos.list({
     auth: ytapi_key,
@@ -256,7 +268,7 @@ Youtube.prototype.addToBrowseSources = function() {
     plugin_type: 'music_service',
     plugin_name: 'youtube'
   };
-  this.commandRouter.volumioAddToBrowseSources(data);
+
   this.commandRouter.volumioAddToBrowseSources(data);
 };
 
@@ -321,7 +333,6 @@ Youtube.prototype.stop = function() {
   });
 };
 
-
 Youtube.prototype.pause = function() {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::pause');
@@ -335,7 +346,6 @@ Youtube.prototype.pause = function() {
     });
   });
 };
-
 
 Youtube.prototype.resume = function() {
   var self = this;
@@ -397,6 +407,164 @@ Youtube.prototype.prefetch = function(nextTrack) {
     }
   });
 };
+
+Youtube.prototype.getTrend = function(pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    auth: ytapi_key,
+    chart: 'mostPopular',
+    part: "snippet",
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  yt.videos.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      var videos = res.items;
+      var loadVideos = self.calcLoadVideoLimit(self.addTrend.length, videos.length);
+
+      for (var i = 0; i < loadVideos; i++) {
+        self.addTrend.push(self.parseVideoData(videos[i]));
+      }
+
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.addTrend.length)) {
+        self.getTrend(res.nextPageToken, deferred);
+      } else {
+        deferred.resolve(self.parseTrend());
+      }
+    }
+  });
+
+  return deferred.promise;
+}
+
+Youtube.prototype.parseTrend = function() {
+  var self = this;
+  self.logger.info('Youtube::parseTrend');
+
+  var result = {};
+
+  if (self.addTrend.length > 0) {
+    var items = self.addTrend.slice(0);
+    self.addTrend = [];
+    self.logger.info(JSON.stringify({
+      navigation: {
+        prev: {
+          uri: 'youtube'
+        },
+        lists: [{
+          title: 'Youtube trendy videos',
+          icon: 'fa fa-youtube',
+          availableListViews: ['list', 'grid'],
+          items: items.slice(0, 3)
+        }]
+      }
+    }));
+
+    return {
+      navigation: {
+        prev: {
+          uri: '/'
+        },
+        lists: [{
+          title: 'Youtube trendy videos',
+          icon: 'fa fa-youtube',
+          availableListViews: ['list', 'grid'],
+          items: items
+        }]
+      }
+    };
+  }
+
+  return {};
+}
+
+Youtube.prototype.canLoadFurtherVideos = function(numOfCurrLoadedVideos) {
+  var self = this;
+  return self.resultsLimit > numOfCurrLoadedVideos;
+}
+
+Youtube.prototype.calcLoadVideoLimit = function(numLoadedVideos, numAvailableVideos) {
+  var self = this;
+  var loadVideos = self.canLoadFurtherVideos(numLoadedVideos) ?
+    self.resultsLimit - numLoadedVideos : 0;
+
+  //don't load more videos than available
+  if (loadVideos > numAvailableVideos) {
+    loadVideos = numAvailableVideos;
+  }
+
+  self.logger.info('Youtube::calcLoadVideoLimit: ' + loadVideos);
+  return loadVideos;
+}
+
+Youtube.prototype.parseVideoData = function(videoData) {
+  var albumart;
+  if (videoData.snippet.thumbnails != null) {
+    //try to get highest quality image first
+    if (videoData.snippet.thumbnails.high !== null) {
+      albumart = videoData.snippet.thumbnails.high.url;
+    } else if (videoData.snippet.thumbnails.medium !== null) {
+      albumart = videoData.snippet.thumbnails.medium.url;
+    } else if (videoData.snippet.thumbnails.default !== null) {
+      albumart = videoData.snippet.thumbnails.default.url;
+    }
+  }
+
+  var url = 'youtube/';
+  var type;
+
+  if (videoData.kind) {
+    switch (videoData.kind) {
+      case 'youtube#video':
+        url += 'video/' + videoData.id;
+        type = 'song';
+        break;
+      case 'youtube#searchResult':
+        switch (videoData.id.kind) {
+          case 'youtube#video':
+            url += 'video/' + videoData.id.videoId;
+            type = 'song';
+            break;
+          case 'youtube#playlist':
+            url += 'playlist/' + videoData.id.playlistId;
+            type = 'folder';
+            break;
+          default:
+            url += 'unhandled-search-kind: ' + videoData.id.kind;
+            break;
+        }
+        break;
+      case 'youtube#playlistItem':
+        url += 'video/' + videoData.snippet.resourceId.videoId;
+        type = 'song';
+        break;
+      default:
+        url += 'unhandled-kind: ' + videoData.kind;
+        break;
+    }
+  }
+  return {
+    service: 'youtube',
+    type: type,
+    title: videoData.snippet.title,
+    artist: videoData.snippet.channelTitle,
+    //album: videoData.snippet.description,
+    albumart: albumart,
+    uri: url
+  };
+}
 
 Youtube.prototype.updateSettings = function(data) {
   var self = this;
