@@ -33,6 +33,14 @@ Features, ETAs:
 - [x] Chrome Extension for sending video to the volumio directly from your browser
 - [ ] Import playlist from youtube (updating it on youtube causes it to update locally as well) - 5days
 - [ ] WebUI Integration - 1week
+  - [x] Searching for videos and playlists
+  - [x] Playback videos found in search
+  - [x] Add playlist to queue
+	- [ ] Playlist direct playback (click on play)
+  - [x] Displaying trend when opening YouTube in Browse
+	- [ ] Add video/playlist to a Volumio playlist
+	- [ ] Add video/playlist to Volumio favourites
+	- [ ] Login to YouTube account
 - [ ] Mobile app integration - 2weeks
 
 
