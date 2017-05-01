@@ -7,7 +7,7 @@ var request = require('request');
 var dur = require("iso8601-duration");
 
 var yt = gapis.youtube('v3');
-var ytapi_key = "AIzaSyBI8Z5gARDDBGKLLY-0ncLTWWXVZLInrzU";
+var ytapi_key = "AIzaSyAl1Xq9DwdE_KD4AtPaE4EJl3WZe2zCqg4";
 
 module.exports = Youtube;
 
@@ -19,7 +19,7 @@ function Youtube(context) {
   this.logger = this.context.logger;
   this.configManager = this.context.configManager;
   this.addQueue = [];
-  this.addTrend = [];
+  this.trendResults = [];
   this.searchResults = [];
   this.state = {};
   this.stateMachine = this.commandRouter.stateMachine;
@@ -264,7 +264,7 @@ Youtube.prototype.search = function(query) {
     return libQ.resolve([]);
   }
 
-  return self.search(query);
+  return self.doSearch(query.value);
 };
 
 Youtube.prototype.getState = function() {
@@ -441,14 +441,14 @@ Youtube.prototype.getTrend = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.addTrend = self.addTrend.concat(self.processYouTubeResponse(res.items, self.addTrend.length));
+      self.trendResults = self.trendResults.concat(self.processYouTubeResponse(res.items, self.trendResults.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.addTrend.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.trendResults.length)) {
         self.getTrend(res.nextPageToken, deferred);
       } else {
-        if (self.addTrend.length > 0) {
-          var items = self.addTrend.slice(0);
-          self.addTrend = []; //clean up
+        if (self.trendResults.length > 0) {
+          var items = self.trendResults.slice(0);
+          self.trendResults = []; //clean up
 
           deferred.resolve({
             navigation: {
@@ -473,7 +473,7 @@ Youtube.prototype.getTrend = function(pageToken, deferred) {
   return deferred.promise;
 }
 
-Youtube.prototype.search = function(query, pageToken, deferred) {
+Youtube.prototype.doSearch = function(query, pageToken, deferred) {
   var self = this;
 
   if (deferred == null) {
@@ -487,6 +487,8 @@ Youtube.prototype.search = function(query, pageToken, deferred) {
     maxResults: 50
   };
 
+  console.log(request);
+
   if (pageToken != undefined) {
     request.pageToken = pageToken;
   }
@@ -499,7 +501,7 @@ Youtube.prototype.search = function(query, pageToken, deferred) {
       self.searchResults = self.searchResults.concat(self.processYouTubeResponse(res.items, self.searchResults.length));
 
       if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.searchResults.length)) {
-        self.search(query, res.nextPageToken, deferred);
+        self.doSearch(query, res.nextPageToken, deferred);
       } else {
         if (self.searchResults.length > 0) {
           var items = self.searchResults.slice(0);
