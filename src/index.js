@@ -484,6 +484,7 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
     auth: ytapi_key,
     q: query,
     part: "snippet",
+    type: "playlist, video",
     maxResults: 50
   };
 
