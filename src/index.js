@@ -224,40 +224,48 @@ Youtube.prototype.handleBrowseUri = function(uri) {
   return libQ.reject();
 };
 
-Youtube.prototype.explodeUri = function(videoId) {
+Youtube.prototype.explodeUri = function(uri) {
   var self = this;
-  this.logger.info("Youtube::explodeUri " + "https://youtube.com/oembed?format=json&url=" + videoId);
 
   var deferred = libQ.defer();
 
-  yt.videos.list({
-    auth: ytapi_key,
-    part: "snippet,contentDetails",
-    id: videoId
-  }, function(err, res) {
-    if (err) {
-      //Holy crap, something went wrong :/
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else if (res.items.length == 0) {
-      deferred.reject(new Error("Video is not valid"));
-    } else {
-      self.logger.info("Youtube -> " + JSON.stringify(res));
-      deferred.resolve({
-        uri: videoId,
-        service: 'youtube',
-        name: res.items[0].snippet.title,
-        title: res.items[0].snippet.title,
-        artist: "Youtube",
-        type: 'track',
-        albumart: res.items[0].snippet.thumbnails.default.url,
-        duration: dur.toSeconds(dur.parse(res.items[0].contentDetails.duration)),
-        trackType: "YouTube",
-        samplerate: '44 KHz',
-        bitdepth: '24 bit'
-      });
-    }
-  });
+  if (uri.startsWith('youtube/playlist/')) {
+    self.logger.info("Youtube::explodeUri Playlist: " + uri);
+
+    self.addPlaylist(uri.split('/').pop());
+  } else {
+    self.logger.info("Youtube::explodeUri " + "https://youtube.com/oembed?format=json&url=" + uri);
+
+    yt.videos.list({
+      auth: ytapi_key,
+      part: "snippet,contentDetails",
+      id: uri
+    }, function(err, res) {
+      if (err) {
+        //Holy crap, something went wrong :/
+        self.logger.error(err.message + "\n" + err.stack);
+        deferred.reject(err);
+      } else if (res.items.length == 0) {
+        deferred.reject(new Error("Video is not valid"));
+      } else {
+        self.logger.info("Youtube -> " + JSON.stringify(res));
+        deferred.resolve({
+          uri: uri,
+          service: 'youtube',
+          name: res.items[0].snippet.title,
+          title: res.items[0].snippet.title,
+          artist: "Youtube",
+          type: 'track',
+          albumart: res.items[0].snippet.thumbnails.default.url,
+          duration: dur.toSeconds(dur.parse(res.items[0].contentDetails.duration)),
+          trackType: "YouTube",
+          samplerate: '44 KHz',
+          bitdepth: '24 bit'
+        });
+      }
+    });
+  }
+
   return deferred.promise;
 };
 
