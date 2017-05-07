@@ -101,6 +101,7 @@ Youtube.prototype.getUIConfig = function() {
     .then(function(uiconf) {
       if (self.accessToken != null) {
         uiconf.sections[0].description = 'Volumio has access to your YouTube account. We will only use it to display videos related to your account!';
+        uiconf.sections[0].content = [];
       } else {
         self.pollPermissions();
         uiconf.sections[0].description = uiconf.sections[0].description.replace('{0}', self.accessData.verification_url);
@@ -462,6 +463,59 @@ Youtube.prototype.prefetch = function(nextTrack) {
     }
   });
 };
+
+Youtube.prototype.getActivities = function(pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    part: "snippet",
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  self.yt.activities.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      self.trendResults = self.trendResults.concat(self.processYouTubeResponse(res.items, self.trendResults.length));
+
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.trendResults.length)) {
+        self.getTrend(res.nextPageToken, deferred);
+      } else {
+        if (self.trendResults.length > 0) {
+          var items = self.trendResults.slice(0);
+          self.trendResults = []; //clean up
+
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: '/'
+              },
+              lists: [{
+                title: 'Youtube trendy videos',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
+}
 
 Youtube.prototype.getTrend = function(pageToken, deferred) {
   var self = this;
