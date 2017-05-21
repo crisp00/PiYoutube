@@ -250,6 +250,7 @@ Youtube.prototype.handleBrowseUri = function(uri) {
         return self.getActivities();
       }
 
+      self.commandRouter.pushToastMessage('info', 'Volumio has no permissions', 'Grant Volumio access to your YouTube account to access your playlists.');
       return self.getTrend();
     } else if (uri.startsWith('youtube/playlist/')) {
       return self.getPlaylistItems(uri.split('/').pop());
