@@ -247,12 +247,7 @@ Youtube.prototype.handleBrowseUri = function(uri) {
   if (uri.startsWith('youtube')) {
     //root
     if (uri === 'youtube') {
-      if (self.isAccessGranted()) {
-        return self.getActivities();
-      }
-
-      self.commandRouter.pushToastMessage('info', 'Volumio has no permissions', 'Grant Volumio access to your YouTube account to access your playlists.');
-      return self.getTrend();
+      return self.getRootContent();
     } else if (uri.startsWith('youtube/playlist/')) {
       return self.getPlaylistItems(uri.split('/').pop());
     }
@@ -466,6 +461,42 @@ Youtube.prototype.prefetch = function(nextTrack) {
   });
 };
 
+Youtube.prototype.getRootContent = function() {
+  var self = this;
+
+  if (!self.isAccessGranted()) {
+    self.commandRouter.pushToastMessage('info', 'Volumio has no permissions', 'Grant Volumio access to your YouTube account to access your playlists.');
+    return self.getTrend();
+  }
+
+  var promise = self.getActivities()
+    .then(function(activities) {
+      activities.navigation.lists.unshift({
+        title: 'My Youtube',
+        icon: 'fa fa-youtube',
+        availableListViews: ['list', 'grid'],
+        items: [{
+            service: 'youtube',
+            type: 'folder',
+            title: 'Channels',
+            icon: 'fa fa-folder-open-o',
+            uri: 'youtube/my/channels'
+          },
+          {
+            service: 'youtube',
+            type: 'folder',
+            title: 'Playlists',
+            icon: 'fa fa-folder-open-o',
+            uri: 'youtube/my/playlists'
+          }
+        ]
+      });
+      return activities;
+    });
+
+  return promise;
+}
+
 Youtube.prototype.getActivities = function(pageToken, deferred) {
   var self = this;
 
@@ -475,7 +506,7 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
 
   var request = {
     part: "snippet",
-    mine: true,
+    home: true,
     maxResults: 50
   };
 
@@ -491,7 +522,7 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
       self.activitiesResults = self.activitiesResults.concat(self.processYouTubeResponse(res.items, self.activitiesResults.length));
 
       if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.activitiesResults.length)) {
-        self.getTrend(res.nextPageToken, deferred);
+        self.getActivities(res.nextPageToken, deferred);
       } else {
         if (self.activitiesResults.length > 0) {
           var items = self.activitiesResults.slice(0);
@@ -975,5 +1006,5 @@ Youtube.prototype.updateYtApiAccessToken = function() {
 }
 
 Youtube.prototype.isAccessGranted = function() {
-  return token != null && token.refresh_token != null && token.access_token != null;
+  return token && token.refresh_token && token.access_token;
 }
