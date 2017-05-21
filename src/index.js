@@ -31,6 +31,7 @@ function Youtube(context) {
   self.configManager = self.context.configManager;
   self.addQueue = [];
   self.trendResults = [];
+  self.activitiesResults = [];
   self.searchResults = [];
   self.playlistItems = [];
   self.state = {};
@@ -487,14 +488,14 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.trendResults = self.trendResults.concat(self.processYouTubeResponse(res.items, self.trendResults.length));
+      self.activitiesResults = self.activitiesResults.concat(self.processYouTubeResponse(res.items, self.activitiesResults.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.trendResults.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.activitiesResults.length)) {
         self.getTrend(res.nextPageToken, deferred);
       } else {
-        if (self.trendResults.length > 0) {
-          var items = self.trendResults.slice(0);
-          self.trendResults = []; //clean up
+        if (self.activitiesResults.length > 0) {
+          var items = self.activitiesResults.slice(0);
+          self.activitiesResults = []; //clean up
 
           deferred.resolve({
             navigation: {
