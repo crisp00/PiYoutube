@@ -864,7 +864,8 @@ Youtube.prototype.pollPermissions = function() {
       } else if (res.statusCode == '400') {
         //Authorization pending
         console.log('Authorization pending, polling again in ' + self.accessData.interval + ' seconds.');
-        setTimeout(self.pollPermissions.bind(self), self.accessData.interval * 1000);
+        // add one second to polling interval to avoid Polling too frequently error
+        setTimeout(self.pollPermissions.bind(self), self.accessData.interval * 1000 + 1000);
       } else {
         self.commandRouter.pushToastMessage('error', data.error, data.error_description);
         deferred.reject(new Error(data.error + ': ' + data.error_description));
