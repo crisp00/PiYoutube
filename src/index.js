@@ -474,6 +474,7 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
 
   var request = {
     part: "snippet",
+    mine: true,
     maxResults: 50
   };
 
@@ -501,7 +502,7 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
                 uri: '/'
               },
               lists: [{
-                title: 'Youtube trendy videos',
+                title: 'Youtube activities',
                 icon: 'fa fa-youtube',
                 availableListViews: ['list', 'grid'],
                 items: items
