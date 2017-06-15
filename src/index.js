@@ -102,7 +102,7 @@ Youtube.prototype.getUIConfig = function() {
       __dirname + '/i18n/strings_en.json',
       __dirname + '/UIConfig.json')
     .then(function(uiconf) {
-      if (self.accessToken != null) {
+      if (self.isAccessGranted()) {
         uiconf.sections[0].description = 'Volumio has access to your YouTube account. We will only use it to display videos related to your account!';
         uiconf.sections[0].content = [];
       } else {
