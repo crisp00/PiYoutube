@@ -900,14 +900,12 @@ Youtube.prototype.pollPermissions = function() {
 
     res.on('data', function(chunk) {
       var data = JSON.parse(chunk);
-      console.log(res.statusCode, data);
 
       if (res.statusCode == '200') {
         fs.writeFile(path.join(__dirname, 'authToken.json'), chunk, function(err) {
           if (err) {
-            return console.log(err);
+            self.logger.error("Could not save the authentication token!");
           }
-          console.log("The file was saved!");
         });
 
         self.accessToken = data;
@@ -917,7 +915,7 @@ Youtube.prototype.pollPermissions = function() {
         deferred.resolve(data);
       } else if (res.statusCode == '400') {
         //Authorization pending
-        console.log('Authorization pending, polling again in ' + self.accessData.interval + ' seconds.');
+        self.logger.info('Authorization pending, polling again in ' + self.accessData.interval + ' seconds.');
         // add one second to polling interval to avoid Polling too frequently error
         setTimeout(self.pollPermissions.bind(self), self.accessData.interval * 1000 + 1000);
       } else {
@@ -964,7 +962,6 @@ Youtube.prototype.refreshAuthToken = function() {
 
     res.on('data', function(chunk) {
       var data = JSON.parse(chunk);
-      console.log(data);
 
       if (res.statusCode == '200') {
         self.accessToken.expires_in = data.expires_in;
@@ -972,26 +969,24 @@ Youtube.prototype.refreshAuthToken = function() {
 
         fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify(self.accessToken), function(err) {
           if (err) {
-            return console.log(err);
+            self.logger.error('Could not write authToken file:' + err);
           }
-          console.log("The file was saved!");
         });
 
         setTimeout(self.refreshAuthToken.bind(self), self.accessToken.expires_in * 1000);
         self.updateYtApiAccessToken();
 
-        console.log('refresh token again in seconds: ' + self.accessToken.expires_in);
+        self.logger.info('refresh token again in seconds: ' + self.accessToken.expires_in);
 
         deferred.resolve({});
       } else {
-        console.log('----------------------------> CLEARING FILE');
+        self.logger.info('Clearing authentication file!');
 
         self.commandRouter.pushToastMessage('error', data.error, data.error_description);
         fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify({}), function(err) {
           if (err) {
-            return console.log(err);
+            self.logger.error('Could not write authToken file:' + err);
           }
-          console.log("The file was saved!");
         });
         deferred.reject(new Error(data.error + ': ' + data.error_description));
       }
