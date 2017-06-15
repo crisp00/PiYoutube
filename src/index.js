@@ -33,6 +33,7 @@ function Youtube(context) {
   self.trendResults = [];
   self.activitiesResults = [];
   self.searchResults = [];
+  self.likedVideos = [];
   self.playlists = [];
   self.playlistItems = [];
   self.state = {};
@@ -250,6 +251,8 @@ Youtube.prototype.handleBrowseUri = function(uri) {
       return self.getRootContent();
     } else if (uri.startsWith('youtube/root/playlists')) {
       return self.getUserPlaylists();
+    } else if (uri.startsWith('youtube/root/likedVideos')) {
+      return self.getUserLikedVideos();
     } else if (uri.startsWith('youtube/playlist/')) {
       return self.getPlaylistItems(uri.split('/').pop());
     }
@@ -491,6 +494,12 @@ Youtube.prototype.getRootContent = function() {
             icon: 'fa fa-folder-open-o',
             uri: 'youtube/root/playlists'
           },
+          {
+            service: 'youtube',
+            type: 'folder',
+            title: 'Liked Videos',
+            icon: 'fa fa-folder-open-o',
+            uri: 'youtube/root/likedVideos'
           }
         ]
       });
@@ -498,6 +507,60 @@ Youtube.prototype.getRootContent = function() {
     });
 
   return promise;
+}
+
+Youtube.prototype.getUserLikedVideos = function(pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    part: "snippet",
+    myRating: 'like',
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  self.yt.videos.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      self.likedVideos = self.likedVideos.concat(self.processYouTubeResponse(res.items, self.likedVideos.length));
+
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.likedVideos.length)) {
+        self.getUserLikedVideos(res.nextPageToken, deferred);
+      } else {
+        if (self.likedVideos.length > 0) {
+          var items = self.likedVideos.slice(0);
+          self.likedVideos = []; //clean up
+
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: 'youtube'
+              },
+              lists: [{
+                title: 'Liked Videos',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
 }
 
 Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
