@@ -678,7 +678,7 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
       // always load all playlist items
       var videos = res.items;
       for (var i = 0; i < videos.length; i++) {
-        self.playlistItems.push(self.parseVideoData(videos[i]));
+        self.playlistItems.concat(self.parseVideoData(videos[i]));
       }
 
       if (res.nextPageToken != undefined) {
@@ -794,7 +794,6 @@ Youtube.prototype.parseVideoData = function(videoData) {
     type: type,
     title: videoData.snippet.title,
     artist: videoData.snippet.channelTitle,
-    //album: videoData.snippet.description,
     albumart: albumart,
     uri: url
   };
@@ -814,10 +813,6 @@ Youtube.prototype.updateSettings = function(data) {
 
   return libQ.resolve();
 };
-
-Youtube.prototype.loadI18NStrings = function(language_code) {
-  console.log(language_code);
-}
 
 Youtube.prototype.getAccessToken = function() {
   var self = this;
