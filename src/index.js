@@ -245,6 +245,7 @@ Youtube.prototype.stop = function() {
 Youtube.prototype.handleBrowseUri = function(uri) {
   var self = this;
   self.logger.info('handleBrowseUri: ' + uri);
+  self.commandRouter.pushToastMessage('info', 'YouTube', 'Fetching data from YouTube. This may take some time.');
 
   if (uri.startsWith('youtube')) {
     if (uri === 'youtube') { //root
@@ -311,6 +312,7 @@ Youtube.prototype.search = function(query) {
     return libQ.resolve([]);
   }
 
+  self.commandRouter.pushToastMessage('info', 'YouTube', 'Fetching data from YouTube. This may take some time.');
   return self.doSearch(query.value);
 };
 
