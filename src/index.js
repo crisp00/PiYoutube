@@ -192,7 +192,6 @@ Youtube.prototype.addPlaylist = function(playlistId, pageToken) {
       deferred.reject(err);
     } else {
       var videos = res.items;
-      //self.commandRouter.pushConsoleMessage(JSON.stringify(videos));
       for (var i = 0; i < videos.length; i++) {
         var video = {
           uri: videos[i].snippet.resourceId.videoId
@@ -533,9 +532,9 @@ Youtube.prototype.getUserLikedVideos = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.likedVideos = self.likedVideos.concat(self.processYouTubeResponse(res.items, self.likedVideos.length));
+      self.likedVideos = self.likedVideos.concat(self.processResponse(res.items, self.likedVideos.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.likedVideos.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.likedVideos.length)) {
         self.getUserLikedVideos(res.nextPageToken, deferred);
       } else {
         if (self.likedVideos.length > 0) {
@@ -587,9 +586,9 @@ Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.playlists = self.playlists.concat(self.processYouTubeResponse(res.items, self.playlists.length));
+      self.playlists = self.playlists.concat(self.processResponse(res.items, self.playlists.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.playlists.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.playlists.length)) {
         self.getUserPlaylists(res.nextPageToken, deferred);
       } else {
         if (self.playlists.length > 0) {
@@ -640,9 +639,9 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.activitiesResults = self.activitiesResults.concat(self.processYouTubeResponse(res.items, self.activitiesResults.length));
+      self.activitiesResults = self.activitiesResults.concat(self.processResponse(res.items, self.activitiesResults.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.activitiesResults.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.activitiesResults.length)) {
         self.getActivities(res.nextPageToken, deferred);
       } else {
         if (self.activitiesResults.length > 0) {
@@ -694,9 +693,9 @@ Youtube.prototype.getTrend = function(pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.trendResults = self.trendResults.concat(self.processYouTubeResponse(res.items, self.trendResults.length));
+      self.trendResults = self.trendResults.concat(self.processResponse(res.items, self.trendResults.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.trendResults.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.trendResults.length)) {
         self.getTrend(res.nextPageToken, deferred);
       } else {
         if (self.trendResults.length > 0) {
@@ -749,9 +748,9 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      self.searchResults = self.searchResults.concat(self.processYouTubeResponse(res.items, self.searchResults.length));
+      self.searchResults = self.searchResults.concat(self.processResponse(res.items, self.searchResults.length));
 
-      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.searchResults.length)) {
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.searchResults.length)) {
         self.doSearch(query, res.nextPageToken, deferred);
       } else {
         if (self.searchResults.length > 0) {
@@ -797,10 +796,10 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
       deferred.reject(err);
     } else {
       // always load all playlist items
-      // dont call processYouTubeResponse() here!
+      // dont call processResponse() here!
       var videos = res.items;
       for (var i = 0; i < videos.length; i++) {
-        self.playlistItems = self.playlistItems.concat(self.parseVideoData(videos[i]));
+        self.playlistItems = self.playlistItems.concat(self.parseResponseItemData(videos[i]));
       }
 
       if (res.nextPageToken != undefined) {
@@ -833,86 +832,86 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
   return deferred.promise;
 }
 
-Youtube.prototype.processYouTubeResponse = function(videos, numLoadedVideos) {
+Youtube.prototype.processResponse = function(items, numLoadedItems) {
   var self = this;
-  var loadVideos = self.calcLoadVideoLimit(numLoadedVideos, videos.length);
-  var parsedVideos = [];
-  for (var i = 0; i < loadVideos; i++) {
-    parsedVideos.push(self.parseVideoData(videos[i]));
+  var loadItemsCount = self.calcItemsLimit(numLoadedItems, items.length);
+  var parsedItems = [];
+  for (var i = 0; i < loadItemsCount; i++) {
+    parsedItems.push(self.parseResponseItemData(items[i]));
   }
 
-  return parsedVideos;
+  return parsedItems;
 }
 
-Youtube.prototype.canLoadFurtherVideos = function(numOfCurrLoadedVideos) {
+Youtube.prototype.canLoadFurtherItems = function(numOfCurrLoadedItems) {
   var self = this;
-  return self.resultsLimit > numOfCurrLoadedVideos;
+  return self.resultsLimit > numOfCurrLoadedItems;
 }
 
-Youtube.prototype.calcLoadVideoLimit = function(numLoadedVideos, numAvailableVideos) {
+Youtube.prototype.calcItemsLimit = function(numLoadedItems, numAvailableItems) {
   var self = this;
-  var loadVideos = self.canLoadFurtherVideos(numLoadedVideos) ?
-    self.resultsLimit - numLoadedVideos : 0;
+  var loadVideos = self.canLoadFurtherItems(numLoadedItems) ?
+    self.resultsLimit - numLoadedItems : 0;
 
   //don't load more videos than available
-  if (loadVideos > numAvailableVideos) {
-    loadVideos = numAvailableVideos;
+  if (loadVideos > numAvailableItems) {
+    loadVideos = numAvailableItems;
   }
 
   return loadVideos;
 }
 
-Youtube.prototype.parseVideoData = function(videoData) {
+Youtube.prototype.parseResponseItemData = function(item) {
   var albumart;
-  if (videoData.snippet.thumbnails != null) {
+  if (item.snippet.thumbnails != null) {
     //try to get highest quality image first
-    if (videoData.snippet.thumbnails.high !== null) {
-      albumart = videoData.snippet.thumbnails.high.url;
-    } else if (videoData.snippet.thumbnails.medium !== null) {
-      albumart = videoData.snippet.thumbnails.medium.url;
-    } else if (videoData.snippet.thumbnails.default !== null) {
-      albumart = videoData.snippet.thumbnails.default.url;
+    if (item.snippet.thumbnails.high !== null) {
+      albumart = item.snippet.thumbnails.high.url;
+    } else if (item.snippet.thumbnails.medium !== null) {
+      albumart = item.snippet.thumbnails.medium.url;
+    } else if (item.snippet.thumbnails.default !== null) {
+      albumart = item.snippet.thumbnails.default.url;
     }
   }
 
   var url, type;
 
   // TODO rework by reusing same code snippets by extracting them to methods
-  if (videoData.kind) {
-    switch (videoData.kind) {
+  if (item.kind) {
+    switch (item.kind) {
       case 'youtube#video':
-        url = videoData.id;
+        url = item.id;
         type = 'song';
         break;
       case 'youtube#searchResult':
-        switch (videoData.id.kind) {
+        switch (item.id.kind) {
           case 'youtube#video':
-            url = videoData.id.videoId;
+            url = item.id.videoId;
             type = 'song';
             break;
           case 'youtube#playlist':
-            url = 'youtube/playlist/' + videoData.id.playlistId;
+            url = 'youtube/playlist/' + item.id.playlistId;
             type = 'folder';
             break;
           case 'youtube#channel':
-            url = 'youtube/playlist/' + videoData.id.channelId;
+            url = 'youtube/playlist/' + item.id.channelId;
             type = 'folder';
             break;
           default:
-            url = 'youtube/unhandled-search-kind: ' + videoData.id.kind;
+            url = 'youtube/unhandled-search-kind: ' + item.id.kind;
             break;
         }
         break;
       case 'youtube#playlist':
-        url = 'youtube/playlist/' + videoData.id;
+        url = 'youtube/playlist/' + item.id;
         type = 'folder';
         break;
       case 'youtube#channel':
-        url = 'youtube/channel/' + videoData.id;
+        url = 'youtube/channel/' + item.id;
         type = 'folder';
         break;
       case 'youtube#playlistItem':
-        url = videoData.snippet.resourceId.videoId;
+        url = item.snippet.resourceId.videoId;
         type = 'song';
         break;
       case 'youtube#subscription':
@@ -927,16 +926,16 @@ Youtube.prototype.parseVideoData = function(videoData) {
         // },
         break;
       default:
-        url = 'youtube/unhandled-kind: ' + videoData.kind;
+        url = 'youtube/unhandled-kind: ' + item.kind;
         break;
     }
   }
   return {
     service: 'youtube',
     type: type,
-    title: videoData.snippet.title,
-    // TODO: no channel title in subscriptions and
-    artist: videoData.snippet.channelTitle,
+    title: item.snippet.title,
+    // TODO: no channel title in subscriptions
+    artist: item.snippet.channelTitle,
     albumart: albumart,
     uri: url
   };
