@@ -33,6 +33,7 @@ function Youtube(context) {
   self.trendResults = [];
   self.activitiesResults = [];
   self.searchResults = [];
+  self.playlists = [];
   self.playlistItems = [];
   self.state = {};
   self.stateMachine = self.commandRouter.stateMachine;
@@ -245,9 +246,10 @@ Youtube.prototype.handleBrowseUri = function(uri) {
   self.logger.info('handleBrowseUri: ' + uri);
 
   if (uri.startsWith('youtube')) {
-    //root
-    if (uri === 'youtube') {
+    if (uri === 'youtube') { //root
       return self.getRootContent();
+    } else if (uri.startsWith('youtube/root/playlists')) {
+      return self.getUserPlaylists();
     } else if (uri.startsWith('youtube/playlist/')) {
       return self.getPlaylistItems(uri.split('/').pop());
     }
@@ -485,9 +487,10 @@ Youtube.prototype.getRootContent = function() {
           {
             service: 'youtube',
             type: 'folder',
-            title: 'Playlists',
+            title: 'My Playlists',
             icon: 'fa fa-folder-open-o',
-            uri: 'youtube/my/playlists'
+            uri: 'youtube/root/playlists'
+          },
           }
         ]
       });
@@ -497,6 +500,59 @@ Youtube.prototype.getRootContent = function() {
   return promise;
 }
 
+Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    part: "snippet",
+    mine: true,
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  self.yt.playlists.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      self.playlists = self.playlists.concat(self.processYouTubeResponse(res.items, self.playlists.length));
+
+      if (res.nextPageToken != undefined && self.canLoadFurtherVideos(self.playlists.length)) {
+        self.getUserPlaylists(res.nextPageToken, deferred);
+      } else {
+        if (self.playlists.length > 0) {
+          var items = self.playlists.slice(0);
+          self.playlists = []; //clean up
+
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: 'youtube'
+              },
+              lists: [{
+                title: 'My Youtube playlists',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
+}
 Youtube.prototype.getActivities = function(pageToken, deferred) {
   var self = this;
 
@@ -676,9 +732,10 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
       deferred.reject(err);
     } else {
       // always load all playlist items
+      // dont call processYouTubeResponse() here!
       var videos = res.items;
       for (var i = 0; i < videos.length; i++) {
-        self.playlistItems.concat(self.parseVideoData(videos[i]));
+        self.playlistItems = self.playlistItems.concat(self.parseVideoData(videos[i]));
       }
 
       if (res.nextPageToken != undefined) {
