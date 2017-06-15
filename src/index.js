@@ -615,7 +615,7 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
   var request = {
     q: query,
     part: "snippet",
-    type: "playlist, video",
+    type: "video,playlist,channel",
     maxResults: 50
   };
 
@@ -769,6 +769,10 @@ Youtube.prototype.parseVideoData = function(videoData) {
             break;
           case 'youtube#playlist':
             url = 'youtube/playlist/' + videoData.id.playlistId;
+            type = 'folder';
+            break;
+          case 'youtube#channel':
+            url = 'youtube/playlist/' + videoData.id.channelId;
             type = 'folder';
             break;
           default:
