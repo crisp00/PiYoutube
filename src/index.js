@@ -305,14 +305,44 @@ Youtube.prototype.explodeUri = function(uri) {
   return deferred.promise;
 };
 
+Youtube.prototype.getYouTubeUrlItemId = function(url, filter) {
+  var splitResult = url.split(filter);
+  var id = null;
+  if (splitResult.length > 1) {
+    id = splitResult[1];
+
+    var ampersandPos = id.indexOf("&");
+    if (ampersandPos != -1) {
+      id = id.substring(0, ampersandPos);
+    }
+  }
+
+  return id;
+};
+
 Youtube.prototype.search = function(query) {
   var self = this;
   if (!query || !query.value || query.value.length === 0) {
     return libQ.resolve([]);
   }
 
+  var searchValue = query.value;
+
+  if (searchValue.indexOf('youtube.com') !== -1) {
+    //check if it is a video
+    var id = self.getYouTubeUrlItemId(searchValue, 'v=') || self.getYouTubeUrlItemId(searchValue, 'list=');
+    console.log(id);
+
+    if (id) {
+      searchValue = id;
+    }
+  } else if (searchValue.indexOf('youtu.be') !== -1) {
+    // support short urls - the ID is after the slash
+    searchValue = searchValue.split('/').pop();
+  }
+
   self.commandRouter.pushToastMessage('info', 'YouTube', 'Fetching data from YouTube. This may take some time.');
-  return self.doSearch(query.value);
+  return self.doSearch(searchValue);
 };
 
 Youtube.prototype.getState = function() {
