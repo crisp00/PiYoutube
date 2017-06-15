@@ -755,6 +755,7 @@ Youtube.prototype.parseVideoData = function(videoData) {
 
   var url, type;
 
+  // TODO rework by reusing same code snippets by extracting them to methods
   if (videoData.kind) {
     switch (videoData.kind) {
       case 'youtube#video':
@@ -780,9 +781,28 @@ Youtube.prototype.parseVideoData = function(videoData) {
             break;
         }
         break;
+      case 'youtube#playlist':
+        url = 'youtube/playlist/' + videoData.id;
+        type = 'folder';
+        break;
+      case 'youtube#channel':
+        url = 'youtube/channel/' + videoData.id;
+        type = 'folder';
+        break;
       case 'youtube#playlistItem':
         url = videoData.snippet.resourceId.videoId;
         type = 'song';
+        break;
+      case 'youtube#subscription':
+        // TODO handle this:
+        // 		"snippet": {
+        // "publishedAt": "2017-05-08T23:37:10.000Z",
+        // "title": "KMVT",
+        // "description": "KMVT 15, the local non-profit 501(c)(3) award winning community media center, has been providing training, education and equipment to the residents of Mountain View since 1982. Today, KMVT 15 provides those same services to Los Altos, Cupertino, Sunnyvale and Foster City. KMVT 15 continues to be a much needed service and resource, linking the community to the latest technologies of communication.\n\nThe recipient of many national and regional awards, KMVT 15's mission is to provide media education, hands-on training, and civic engagement. It serves as a resource to narrow the digital divide through the use of technology, and provides the community with the tools to create media and utilize technology in a socially responsible manner.\n\nWe are the Voice of the Community!\nKMVT 15 Silicon Valley Community Media & Television is YOUR local TV station and voice.",
+        // "resourceId": {
+        // 	"kind": "youtube#channel",
+        // 	"channelId": "UCuMbNv6DYU4XiKrMJpfyV-Q"
+        // },
         break;
       default:
         url = 'youtube/unhandled-kind: ' + videoData.kind;
@@ -793,6 +813,7 @@ Youtube.prototype.parseVideoData = function(videoData) {
     service: 'youtube',
     type: type,
     title: videoData.snippet.title,
+    // TODO: no channel title in subscriptions and
     artist: videoData.snippet.channelTitle,
     albumart: albumart,
     uri: url
