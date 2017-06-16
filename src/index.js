@@ -33,6 +33,7 @@ function Youtube(context) {
   self.trendResults = [];
   self.activitiesResults = [];
   self.searchResults = [];
+  self.subscriptions = [];
   self.likedVideos = [];
   self.playlists = [];
   self.playlistItems = [];
@@ -249,6 +250,8 @@ Youtube.prototype.handleBrowseUri = function(uri) {
   if (uri.startsWith('youtube')) {
     if (uri === 'youtube') { //root
       return self.getRootContent();
+    } else if (uri.startsWith('youtube/root/subscriptions')) {
+      return self.getUserSubscriptions();
     } else if (uri.startsWith('youtube/root/playlists')) {
       return self.getUserPlaylists();
     } else if (uri.startsWith('youtube/root/likedVideos')) {
@@ -331,8 +334,6 @@ Youtube.prototype.search = function(query) {
   if (searchValue.indexOf('youtube.com') !== -1) {
     //check if it is a video
     var id = self.getYouTubeUrlItemId(searchValue, 'v=') || self.getYouTubeUrlItemId(searchValue, 'list=');
-    console.log(id);
-
     if (id) {
       searchValue = id;
     }
@@ -514,9 +515,9 @@ Youtube.prototype.getRootContent = function() {
         items: [{
             service: 'youtube',
             type: 'folder',
-            title: 'Channels',
+            title: 'Subscriptions',
             icon: 'fa fa-folder-open-o',
-            uri: 'youtube/my/channels'
+            uri: 'youtube/root/subscriptions'
           },
           {
             service: 'youtube',
@@ -538,6 +539,60 @@ Youtube.prototype.getRootContent = function() {
     });
 
   return promise;
+}
+
+Youtube.prototype.getUserSubscriptions = function(pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    part: "snippet",
+    mine: true,
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  self.yt.subscriptions.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      self.subscriptions = self.subscriptions.concat(self.processResponse(res.items, self.subscriptions.length));
+
+      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.subscriptions.length)) {
+        self.getUserSubscriptions(res.nextPageToken, deferred);
+      } else {
+        if (self.subscriptions.length > 0) {
+          var items = self.subscriptions.slice(0);
+          self.subscriptions = []; //clean up
+
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: 'youtube'
+              },
+              lists: [{
+                title: 'Youtube subscriptions',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
 }
 
 Youtube.prototype.getUserLikedVideos = function(pageToken, deferred) {
@@ -945,15 +1000,12 @@ Youtube.prototype.parseResponseItemData = function(item) {
         type = 'song';
         break;
       case 'youtube#subscription':
-        // TODO handle this:
-        // 		"snippet": {
-        // "publishedAt": "2017-05-08T23:37:10.000Z",
-        // "title": "KMVT",
-        // "description": "KMVT 15, the local non-profit 501(c)(3) award winning community media center, has been providing training, education and equipment to the residents of Mountain View since 1982. Today, KMVT 15 provides those same services to Los Altos, Cupertino, Sunnyvale and Foster City. KMVT 15 continues to be a much needed service and resource, linking the community to the latest technologies of communication.\n\nThe recipient of many national and regional awards, KMVT 15's mission is to provide media education, hands-on training, and civic engagement. It serves as a resource to narrow the digital divide through the use of technology, and provides the community with the tools to create media and utilize technology in a socially responsible manner.\n\nWe are the Voice of the Community!\nKMVT 15 Silicon Valley Community Media & Television is YOUR local TV station and voice.",
-        // "resourceId": {
-        // 	"kind": "youtube#channel",
-        // 	"channelId": "UCuMbNv6DYU4XiKrMJpfyV-Q"
-        // },
+        if (item.snippet.resourceId && item.snippet.resourceId.kind === 'youtube#channel') {
+          url = 'youtube/channel/' + item.snippet.resourceId.channelId;
+          type = 'folder';
+        } else {
+          url = 'youtube/unhandled-subscription-kind: ' + item.kind;
+        }
         break;
       default:
         url = 'youtube/unhandled-kind: ' + item.kind;
