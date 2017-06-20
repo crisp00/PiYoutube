@@ -35,6 +35,7 @@ function Youtube(context) {
   self.searchResults = [];
   self.subscriptions = [];
   self.likedVideos = [];
+  self.channelPlaylists = [];
   self.playlists = [];
   self.playlistItems = [];
   self.state = {};
@@ -258,6 +259,8 @@ Youtube.prototype.handleBrowseUri = function(uri) {
       return self.getUserLikedVideos();
     } else if (uri.startsWith('youtube/playlist/')) {
       return self.getPlaylistItems(uri.split('/').pop());
+    } else if (uri.startsWith('youtube/channel/')) {
+      return self.getChannelSections(uri.split('/').pop());
     }
   }
 
@@ -702,6 +705,7 @@ Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
 
   return deferred.promise;
 }
+
 Youtube.prototype.getActivities = function(pageToken, deferred) {
   var self = this;
 
@@ -750,6 +754,68 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
           deferred.resolve({});
         }
       }
+    }
+  });
+
+  return deferred.promise;
+}
+
+Youtube.prototype.getChannelSections = function(channelId) {
+  // channel sections containing the playlists can be received in one request
+  var self = this;
+  var deferred = libQ.defer();
+
+  var request = {
+    channelId: channelId,
+    part: "contentDetails",
+  };
+
+  self.yt.channelSections.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      // always load all playlist items contained in channel sections response
+      // dont call processResponse() here!
+
+      // 1. collect all playlist ids
+      var items = res.items;
+      var playlistIds = [];
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        // channel sections may do not contain any playlists -> we need to skip them
+        if (item && item.kind === 'youtube#channelSection' &&
+          item.contentDetails && item.contentDetails.playlists) {
+          playlistIds = playlistIds.concat(item.contentDetails.playlists);
+        }
+      }
+
+      // 2. fetch the content details of the playlists
+      self.getPlaylist(playlistIds).then(function(playlists) {
+          if (playlists.navigation.lists.length > 0) {
+            var playlistItems = playlists.navigation.lists.pop().items;
+            deferred.resolve({
+              navigation: {
+                prev: {
+                  uri: 'youtube/root/subscriptions'
+                },
+                lists: [{
+                  title: 'Youtube channel playlists',
+                  icon: 'fa fa-youtube',
+                  availableListViews: ['list', 'grid'],
+                  items: playlistItems
+                }]
+              }
+            });
+          } else {
+            self.commandRouter.pushToastMessage('info', 'No playlists', 'Could not find any playlists for this channel.');
+            deferred.resolve({});
+          }
+        },
+        function(error) {
+          self.logger.error(err.message + "\n" + err.stack);
+          self.commandRouter.pushToastMessage('error', 'Error fetching playlists', 'Failed fetching playlists of channel.');
+        });
     }
   });
 
@@ -847,6 +913,65 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
             icon: 'fa fa-youtube',
             availableListViews: ['list', 'grid'],
             items: items
+          });
+        } else {
+          deferred.resolve({});
+        }
+      }
+    }
+  });
+
+  return deferred.promise;
+}
+
+Youtube.prototype.getPlaylist = function(playlistId, pageToken, deferred) {
+  var self = this;
+
+  if (deferred == null) {
+    deferred = libQ.defer();
+  }
+
+  var request = {
+    id: playlistId.join(','),
+    part: "snippet",
+    maxResults: 50
+  };
+
+  if (pageToken != undefined) {
+    request.pageToken = pageToken;
+  }
+
+  self.yt.playlists.list(request, function(err, res) {
+    if (err) {
+      self.logger.error(err.message + "\n" + err.stack);
+      deferred.reject(err);
+    } else {
+      // always load all playlist items
+      // dont call processResponse() here!
+      var videos = res.items;
+
+      for (var i = 0; i < videos.length; i++) {
+        self.playlists.push(self.parseResponseItemData(videos[i]));
+      }
+
+      if (res.nextPageToken != undefined) {
+        self.getPlaylist(playlistId, res.nextPageToken, deferred);
+      } else {
+        if (self.playlists.length > 0) {
+          var items = self.playlists.slice(0);
+          self.playlists = []; //clean up
+          deferred.resolve({
+            navigation: {
+              prev: {
+                uri: 'youtube'
+              },
+              lists: [{
+                title: 'Youtube Playlists',
+                icon: 'fa fa-youtube',
+                availableListViews: ['list', 'grid'],
+                items: items
+              }]
+            }
           });
         } else {
           deferred.resolve({});
@@ -961,6 +1086,7 @@ Youtube.prototype.parseResponseItemData = function(item) {
 
   var url, type;
 
+  // TODO rework and return null if something cannot be handled
   // TODO rework by reusing same code snippets by extracting them to methods
   if (item.kind) {
     switch (item.kind) {
@@ -1012,6 +1138,7 @@ Youtube.prototype.parseResponseItemData = function(item) {
         break;
     }
   }
+
   return {
     service: 'youtube',
     type: type,
