@@ -832,6 +832,7 @@ Youtube.prototype.getTrend = function(pageToken, deferred) {
   var request = {
     chart: 'mostPopular',
     part: "snippet",
+    videoCategoryId: 10,
     maxResults: 50
   };
 
