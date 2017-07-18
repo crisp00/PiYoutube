@@ -30,14 +30,6 @@ function Youtube(context) {
   self.logger = self.context.logger;
   self.configManager = self.context.configManager;
   self.addQueue = [];
-  self.trendResults = [];
-  self.activitiesResults = [];
-  self.searchResults = [];
-  self.subscriptions = [];
-  self.likedVideos = [];
-  self.channelPlaylists = [];
-  self.playlists = [];
-  self.playlistItems = [];
   self.state = {};
   self.stateMachine = self.commandRouter.stateMachine;
 
@@ -47,13 +39,13 @@ function Youtube(context) {
   });
 }
 
-Youtube.prototype.onVolumioStart = function() {
+Youtube.prototype.onVolumioStart = function () {
   var self = this;
 
   var configFile = self.commandRouter.pluginManager.getConfigurationFile(self.context, 'config.json');
   self.configFile = configFile;
 
-  self.config = new(require('v-conf'))();
+  self.config = new (require('v-conf'))();
   self.config.loadFile(configFile);
   self.resultsLimit = self.config.get('results_limit');
 
@@ -68,7 +60,7 @@ Youtube.prototype.onVolumioStart = function() {
   return libQ.resolve();
 };
 
-Youtube.prototype.onStart = function() {
+Youtube.prototype.onStart = function () {
   var self = this;
   //Getting the mdp plugin
   self.mpdPlugin = self.commandRouter.pluginManager.getPlugin('music_service', 'mpd');
@@ -77,33 +69,33 @@ Youtube.prototype.onStart = function() {
   return libQ.resolve();
 }
 
-Youtube.prototype.onStop = function() {
+Youtube.prototype.onStop = function () {
   var self = this;
   return libQ.resolve();
 };
 
-Youtube.prototype.onRestart = function() {
+Youtube.prototype.onRestart = function () {
   var self = this;
   return libQ.resolve();
 };
 
-Youtube.prototype.onInstall = function() {
+Youtube.prototype.onInstall = function () {
   var self = this;
   //Perform your installation tasks here
 };
 
-Youtube.prototype.onUninstall = function() {
+Youtube.prototype.onUninstall = function () {
   var self = this;
   //Perform your deinstallation tasks here
 };
 
-Youtube.prototype.getUIConfig = function() {
+Youtube.prototype.getUIConfig = function () {
   var self = this;
   var lang_code = self.commandRouter.sharedVars.get('language_code');
   return self.commandRouter.i18nJson(path.join(__dirname, 'i18n', 'strings_' + lang_code + '.json'),
-      __dirname + '/i18n/strings_en.json',
-      __dirname + '/UIConfig.json')
-    .then(function(uiconf) {
+    __dirname + '/i18n/strings_en.json',
+    __dirname + '/UIConfig.json')
+    .then(function (uiconf) {
       if (self.isAccessGranted()) {
         uiconf.sections[0].description = 'Volumio has access to your YouTube account. We will only use it to display videos related to your account!';
         uiconf.sections[0].content = [];
@@ -116,31 +108,31 @@ Youtube.prototype.getUIConfig = function() {
       uiconf.sections[1].content[0].value = self.config.get('results_limit');
       return uiconf;
     })
-    .fail(function() {
+    .fail(function () {
       libQ.reject(new Error());
     });
 };
 
-Youtube.prototype.setUIConfig = function(data) {
+Youtube.prototype.setUIConfig = function (data) {
   var self = this;
   //Perform your UI configuration tasks here
 };
 
-Youtube.prototype.getConf = function(varName) {
+Youtube.prototype.getConf = function (varName) {
   var self = this;
   //Perform your tasks to fetch config data here
 };
 
-Youtube.prototype.setConf = function(varName, varValue) {
+Youtube.prototype.setConf = function (varName, varValue) {
   var self = this;
   //Perform your tasks to set config data here
 };
 
-Youtube.prototype.getConfigurationFiles = function() {
+Youtube.prototype.getConfigurationFiles = function () {
   return ['config.json'];
 }
 
-Youtube.prototype.pause = function() {
+Youtube.prototype.pause = function () {
   var self = this;
   self.logger.info("Youtube::pause");
 
@@ -148,7 +140,7 @@ Youtube.prototype.pause = function() {
 };
 
 
-Youtube.prototype.add = function(vuri) {
+Youtube.prototype.add = function (vuri) {
   var self = this;
   self.logger.info("Youtube::add");
 
@@ -163,7 +155,7 @@ Youtube.prototype.add = function(vuri) {
   }
 };
 
-Youtube.prototype.addVideo = function(videoId) {
+Youtube.prototype.addVideo = function (videoId) {
   var self = this;
   self.logger.info("Youtube::addVideo");
 
@@ -173,7 +165,7 @@ Youtube.prototype.addVideo = function(videoId) {
   }]);
 }
 
-Youtube.prototype.addPlaylist = function(playlistId, pageToken) {
+Youtube.prototype.addPlaylist = function (playlistId, pageToken) {
   var self = this;
   self.logger.info("Youtube::addPlaylist " + playlistId);
 
@@ -187,7 +179,7 @@ Youtube.prototype.addPlaylist = function(playlistId, pageToken) {
   if (pageToken != undefined)
     request.pageToken = pageToken;
 
-  self.yt.playlistItems.list(request, function(err, res) {
+  self.yt.playlistItems.list(request, function (err, res) {
     if (err) {
       //Holy crap, something went wrong :/
       self.logger.error(err.message + "\n" + err.stack);
@@ -209,18 +201,18 @@ Youtube.prototype.addPlaylist = function(playlistId, pageToken) {
   });
 }
 
-Youtube.prototype.parseAddQueue = function() {
+Youtube.prototype.parseAddQueue = function () {
   var self = this;
 
   var deferred = libQ.defer();
   if (self.addQueue.length > 0) {
     var videoDefer = libQ.defer();
-    self.addVideo(self.addQueue[0].uri).then(function() {
+    self.addVideo(self.addQueue[0].uri).then(function () {
       videoDefer.resolve()
-    }, function(e) {
+    }, function (e) {
       videoDefer.resolve()
     });
-    videoDefer.promise.then(function() {
+    videoDefer.promise.then(function () {
       self.commandRouter.pushConsoleMessage("Added " + self.addQueue[0].url);
       self.addQueue.splice(0, 1);
       if (self.addQueue.length > 0) {
@@ -237,13 +229,13 @@ Youtube.prototype.parseAddQueue = function() {
   return deferred.promise;
 }
 
-Youtube.prototype.stop = function() {
+Youtube.prototype.stop = function () {
   var self = this;
   self.logger.info("Youtube::stop");
   return self.commandRouter.volumioStop();
 }
 
-Youtube.prototype.handleBrowseUri = function(uri) {
+Youtube.prototype.handleBrowseUri = function (uri) {
   var self = this;
   self.logger.info('handleBrowseUri: ' + uri);
   self.commandRouter.pushToastMessage('info', 'YouTube', 'Fetching data from YouTube. This may take some time.');
@@ -267,7 +259,7 @@ Youtube.prototype.handleBrowseUri = function(uri) {
   return libQ.reject();
 };
 
-Youtube.prototype.explodeUri = function(uri) {
+Youtube.prototype.explodeUri = function (uri) {
   var self = this;
   var deferred = libQ.defer();
 
@@ -278,11 +270,10 @@ Youtube.prototype.explodeUri = function(uri) {
   } else {
     self.logger.info("Youtube::explodeUri " + "https://youtube.com/oembed?format=json&url=" + uri);
 
-
     self.yt.videos.list({
       part: "snippet,contentDetails",
       id: uri
-    }, function(err, res) {
+    }, function (err, res) {
       if (err) {
         //Holy crap, something went wrong :/
         self.logger.error(err.message + "\n" + err.stack);
@@ -311,7 +302,7 @@ Youtube.prototype.explodeUri = function(uri) {
   return deferred.promise;
 };
 
-Youtube.prototype.getYouTubeUrlItemId = function(url, filter) {
+Youtube.prototype.getYouTubeUrlItemId = function (url, filter) {
   var splitResult = url.split(filter);
   var id = null;
   if (splitResult.length > 1) {
@@ -326,7 +317,7 @@ Youtube.prototype.getYouTubeUrlItemId = function(url, filter) {
   return id;
 };
 
-Youtube.prototype.search = function(query) {
+Youtube.prototype.search = function (query) {
   var self = this;
   if (!query || !query.value || query.value.length === 0) {
     return libQ.resolve([]);
@@ -349,12 +340,12 @@ Youtube.prototype.search = function(query) {
   return self.doSearch(searchValue);
 };
 
-Youtube.prototype.getState = function() {
+Youtube.prototype.getState = function () {
   var self = this;
   self.logger.info("Youtube::getState");
 };
 
-Youtube.prototype.addToBrowseSources = function() {
+Youtube.prototype.addToBrowseSources = function () {
   var self = this;
   self.commandRouter.volumioAddToBrowseSources({
     name: 'Youtube',
@@ -364,96 +355,96 @@ Youtube.prototype.addToBrowseSources = function() {
   });
 };
 
-Youtube.prototype.clearAddPlayTrack = function(track) {
+Youtube.prototype.clearAddPlayTrack = function (track) {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::clearAddPlayTrack');
 
   var deferred = libQ.defer();
   ytdl.getInfo("https://youtube.com/watch?v=" + track.uri, {
     filter: "audioonly"
-  }, function(err, info) {
+  }, function (err, info) {
     if (err) {
       console.log("Error opening Youtube stream, video is probably not valid.");
     } else {
       self.mpdPlugin.sendMpdCommand('stop', [])
-        .then(function() {
+        .then(function () {
           return self.mpdPlugin.sendMpdCommand('clear', []);
         })
-        .then(function(values) {
+        .then(function (values) {
           return self.mpdPlugin.sendMpdCommand('load "' + info["formats"][0]["url"] + '"', []);
         })
-        .fail(function(data) {
+        .fail(function (data) {
           return self.mpdPlugin.sendMpdCommand('add "' + info["formats"][0]["url"] + '"', []);
         })
-        .then(function() {
+        .then(function () {
           //self.commandRouter.stateMachine.setConsumeUpdateService('youtube', true);
           //this.mpdPlugin.ignoreUpdate(true);
-          self.mpdPlugin.clientMpd.on('system', function(status) {
+          self.mpdPlugin.clientMpd.on('system', function (status) {
             var timeStart = Date.now();
             self.logger.info('Youtube Status Update: ' + status);
-            self.mpdPlugin.getState().then(function(state) {
+            self.mpdPlugin.getState().then(function (state) {
               state.trackType = "Fucking Youtube!!!!";
               return self.commandRouter.stateMachine.syncState(state, "youtube");
             });
           });
-          return self.mpdPlugin.sendMpdCommand('play', []).then(function() {
+          return self.mpdPlugin.sendMpdCommand('play', []).then(function () {
             self.commandRouter.pushConsoleMessage("Youtube::After Play");
-            return self.mpdPlugin.getState().then(function(state) {
+            return self.mpdPlugin.getState().then(function (state) {
               state.trackType = "Fucking Youtube!!!!";
               self.commandRouter.pushConsoleMessage("Youtube: " + JSON.stringify(state));
               return self.commandRouter.stateMachine.syncState(state, "youtube");
             });
           });
         })
-        .fail(function(e) {
+        .fail(function (e) {
           return defer.reject(new Error());
         });
     }
   });
 }
 
-Youtube.prototype.stop = function() {
+Youtube.prototype.stop = function () {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::stop');
 
   //self.commandRouter.stateMachine.setConsumeUpdateService('youtube');
-  return self.mpdPlugin.stop().then(function() {
-    return self.mpdPlugin.getState().then(function(state) {
+  return self.mpdPlugin.stop().then(function () {
+    return self.mpdPlugin.getState().then(function (state) {
       state.trackType = "Fucking Youtube!!!!";
       return self.commandRouter.stateMachine.syncState(state, "youtube");
     });
   });
 };
 
-Youtube.prototype.pause = function() {
+Youtube.prototype.pause = function () {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::pause');
 
   // TODO don't send 'toggle' if already paused
   //self.commandRouter.stateMachine.setConsumeUpdateService('youtube');
-  return self.mpdPlugin.pause().then(function() {
-    return self.mpdPlugin.getState().then(function(state) {
+  return self.mpdPlugin.pause().then(function () {
+    return self.mpdPlugin.getState().then(function (state) {
       state.trackType = "Fucking Youtube!!!!";
       return self.commandRouter.stateMachine.syncState(state, "youtube");
     });
   });
 };
 
-Youtube.prototype.resume = function() {
+Youtube.prototype.resume = function () {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::resume');
 
   // TODO don't send 'toggle' if already playing
   //self.commandRouter.stateMachine.setConsumeUpdateService('youtube');
-  return self.mpdPlugin.resume().then(function() {
-    return self.mpdPlugin.getState().then(function(state) {
+  return self.mpdPlugin.resume().then(function () {
+    return self.mpdPlugin.getState().then(function (state) {
       state.trackType = "Fucking Youtube!!!!";
       return self.commandRouter.stateMachine.syncState(state, "youtube");
     });
   });
 };
 
-Youtube.prototype.seek = function(position) {
+Youtube.prototype.seek = function (position) {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::seek');
 
@@ -461,47 +452,47 @@ Youtube.prototype.seek = function(position) {
   return self.mpdPlugin.seek(position);
 };
 
-Youtube.prototype.next = function() {
+Youtube.prototype.next = function () {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::next');
-  return self.mpdPlugin.sendMpdCommand('next', []).then(function() {
-    return self.mpdPlugin.getState().then(function(state) {
+  return self.mpdPlugin.sendMpdCommand('next', []).then(function () {
+    return self.mpdPlugin.getState().then(function (state) {
       state.trackType = "Fucking Youtube!!!!";
       return self.commandRouter.stateMachine.syncState(state, "youtube");
     });
   });;
 };
 
-Youtube.prototype.previous = function() {
+Youtube.prototype.previous = function () {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::previous');
-  return self.mpdPlugin.sendMpdCommand('previous', []).then(function() {
-    return self.mpdPlugin.getState().then(function(state) {
+  return self.mpdPlugin.sendMpdCommand('previous', []).then(function () {
+    return self.mpdPlugin.getState().then(function (state) {
       state.trackType = "Fucking Youtube!!!!";
       return self.commandRouter.stateMachine.syncState(state, "youtube");
     });
   });;
 };
 
-Youtube.prototype.prefetch = function(nextTrack) {
+Youtube.prototype.prefetch = function (nextTrack) {
   var self = this;
   self.commandRouter.pushConsoleMessage('[' + Date.now() + '] ' + 'Youtube::prefetch');
 
   ytdl.getInfo("https://youtube.com/watch?v=" + nextTrack.uri, {
     filter: "audioonly"
-  }, function(err, info) {
+  }, function (err, info) {
     if (err) {
       console.log("Error opening Youtube stream, video is probably not valid.");
     } else {
       return self.mpdPlugin.sendMpdCommand('add "' + info["formats"][0]["url"] + '"', [])
-        .then(function() {
+        .then(function () {
           return self.mpdPlugin.sendMpdCommand('consume 1', []);
         });
     }
   });
 };
 
-Youtube.prototype.getRootContent = function() {
+Youtube.prototype.getRootContent = function () {
   var self = this;
 
   if (!self.isAccessGranted()) {
@@ -509,47 +500,44 @@ Youtube.prototype.getRootContent = function() {
     return self.getTrend();
   }
 
-  var promise = self.getActivities()
-    .then(function(activities) {
+  var deferred = self.getActivities()
+    .then(function (activities) {
       activities.navigation.lists.unshift({
         title: 'My Youtube',
         icon: 'fa fa-youtube',
         availableListViews: ['list', 'grid'],
         items: [{
-            service: 'youtube',
-            type: 'folder',
-            title: 'Subscriptions',
-            icon: 'fa fa-folder-open-o',
-            uri: 'youtube/root/subscriptions'
-          },
-          {
-            service: 'youtube',
-            type: 'folder',
-            title: 'My Playlists',
-            icon: 'fa fa-folder-open-o',
-            uri: 'youtube/root/playlists'
-          },
-          {
-            service: 'youtube',
-            type: 'folder',
-            title: 'Liked Videos',
-            icon: 'fa fa-folder-open-o',
-            uri: 'youtube/root/likedVideos'
-          }
+          service: 'youtube',
+          type: 'folder',
+          title: 'Subscriptions',
+          icon: 'fa fa-folder-open-o',
+          uri: 'youtube/root/subscriptions'
+        },
+        {
+          service: 'youtube',
+          type: 'folder',
+          title: 'My Playlists',
+          icon: 'fa fa-folder-open-o',
+          uri: 'youtube/root/playlists'
+        },
+        {
+          service: 'youtube',
+          type: 'folder',
+          title: 'Liked Videos',
+          icon: 'fa fa-folder-open-o',
+          uri: 'youtube/root/likedVideos'
+        }
         ]
       });
       return activities;
     });
 
-  return promise;
+  return deferred;
 }
 
-Youtube.prototype.getUserSubscriptions = function(pageToken, deferred) {
+Youtube.prototype.getUserSubscriptions = function () {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     part: "snippet",
@@ -557,53 +545,18 @@ Youtube.prototype.getUserSubscriptions = function(pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.subscriptions.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.subscriptions = self.subscriptions.concat(self.processResponse(res.items, self.subscriptions.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.subscriptions.length)) {
-        self.getUserSubscriptions(res.nextPageToken, deferred);
-      } else {
-        if (self.subscriptions.length > 0) {
-          var items = self.subscriptions.slice(0);
-          self.subscriptions = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: 'youtube'
-              },
-              lists: [{
-                title: 'Youtube subscriptions',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.subscriptions.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: 'youtube',
+    title: 'Youtube subscriptions'
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getUserLikedVideos = function(pageToken, deferred) {
+Youtube.prototype.getUserLikedVideos = function () {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     part: "snippet",
@@ -611,53 +564,18 @@ Youtube.prototype.getUserLikedVideos = function(pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.videos.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.likedVideos = self.likedVideos.concat(self.processResponse(res.items, self.likedVideos.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.likedVideos.length)) {
-        self.getUserLikedVideos(res.nextPageToken, deferred);
-      } else {
-        if (self.likedVideos.length > 0) {
-          var items = self.likedVideos.slice(0);
-          self.likedVideos = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: 'youtube'
-              },
-              lists: [{
-                title: 'Liked Videos',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.videos.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: 'youtube',
+    title: 'Liked Videos',
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
+Youtube.prototype.getUserPlaylists = function () {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     part: "snippet",
@@ -665,53 +583,18 @@ Youtube.prototype.getUserPlaylists = function(pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.playlists.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.playlists = self.playlists.concat(self.processResponse(res.items, self.playlists.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.playlists.length)) {
-        self.getUserPlaylists(res.nextPageToken, deferred);
-      } else {
-        if (self.playlists.length > 0) {
-          var items = self.playlists.slice(0);
-          self.playlists = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: 'youtube'
-              },
-              lists: [{
-                title: 'My Youtube playlists',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.playlists.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: 'youtube',
+    title: 'My Youtube playlists'
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getActivities = function(pageToken, deferred) {
+Youtube.prototype.getActivities = function () {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     part: "snippet",
@@ -719,115 +602,74 @@ Youtube.prototype.getActivities = function(pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.activities.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.activitiesResults = self.activitiesResults.concat(self.processResponse(res.items, self.activitiesResults.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.activitiesResults.length)) {
-        self.getActivities(res.nextPageToken, deferred);
-      } else {
-        if (self.activitiesResults.length > 0) {
-          var items = self.activitiesResults.slice(0);
-          self.activitiesResults = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: '/'
-              },
-              lists: [{
-                title: 'Youtube activities',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.activities.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: '/',
+    title: 'Youtube activities',
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getChannelSections = function(channelId) {
+Youtube.prototype.getChannelSections = function (channelId) {
   // channel sections containing the playlists can be received in one request
   var self = this;
-  var deferred = libQ.defer();
-
   var request = {
     channelId: channelId,
     part: "contentDetails",
   };
 
-  self.yt.channelSections.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      // always load all playlist items contained in channel sections response
-      // dont call processResponse() here!
-
-      // 1. collect all playlist ids
-      var items = res.items;
-      var playlistIds = [];
-      for (var i = 0; i < items.length; i++) {
-        var item = items[i];
-        // channel sections may do not contain any playlists -> we need to skip them
-        if (item && item.kind === 'youtube#channelSection' &&
-          item.contentDetails && item.contentDetails.playlists) {
-          playlistIds = playlistIds.concat(item.contentDetails.playlists);
-        }
+  // always load all playlist items contained in channel sections response
+  return self.youtubeRequest({
+    apiFunc: self.yt.channelSections.list,
+    apiRequest: request,
+    loadAll: true,
+    plainResult: true,
+  }).then(function (result) {
+    // 1. collect all playlist ids
+    var playlistIds = [];
+    for (var i = 0; i < result.length; i++) {
+      var item = result[i];
+      // channel sections may do not contain any playlists -> we need to skip them
+      if (item && item.kind === 'youtube#channelSection' &&
+        item.contentDetails && item.contentDetails.playlists) {
+        playlistIds = playlistIds.concat(item.contentDetails.playlists);
       }
-
-      // 2. fetch the content details of the playlists
-      self.getPlaylist(playlistIds).then(function(playlists) {
-          if (playlists.navigation.lists.length > 0) {
-            var playlistItems = playlists.navigation.lists.pop().items;
-            deferred.resolve({
-              navigation: {
-                prev: {
-                  uri: 'youtube/root/subscriptions'
-                },
-                lists: [{
-                  title: 'Youtube channel playlists',
-                  icon: 'fa fa-youtube',
-                  availableListViews: ['list', 'grid'],
-                  items: playlistItems
-                }]
-              }
-            });
-          } else {
-            self.commandRouter.pushToastMessage('info', 'No playlists', 'Could not find any playlists for this channel.');
-            deferred.resolve({});
-          }
-        },
-        function(error) {
-          self.logger.error(err.message + "\n" + err.stack);
-          self.commandRouter.pushToastMessage('error', 'Error fetching playlists', 'Failed fetching playlists of channel.');
-        });
     }
-  });
 
-  return deferred.promise;
+    // 2. fetch the content details of the playlists
+    return self.getPlaylists(playlistIds).then(function (playlists) {
+      if (playlists.navigation.lists.length > 0) {
+        var playlistItems = playlists.navigation.lists.pop().items;
+
+        return {
+          navigation: {
+            prev: {
+              uri: 'youtube'
+            },
+            lists: [{
+              title: 'Youtube channel playlists',
+              icon: 'fa fa-youtube',
+              availableListViews: ['list', 'grid'],
+              items: playlistItems
+            }]
+          }
+        };
+      } else {
+        self.commandRouter.pushToastMessage('info', 'No playlists', 'Could not find any playlists for this channel.');
+        return {};
+      }
+    },
+      function (error) {
+        self.logger.error(err.message + "\n" + err.stack);
+        self.commandRouter.pushToastMessage('error', 'Error fetching playlists', 'Failed fetching playlists of channel.');
+      });
+  });
 }
 
-Youtube.prototype.getTrend = function(pageToken, deferred) {
+Youtube.prototype.getTrend = function () {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     chart: 'mostPopular',
@@ -836,53 +678,18 @@ Youtube.prototype.getTrend = function(pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.videos.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.trendResults = self.trendResults.concat(self.processResponse(res.items, self.trendResults.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.trendResults.length)) {
-        self.getTrend(res.nextPageToken, deferred);
-      } else {
-        if (self.trendResults.length > 0) {
-          var items = self.trendResults.slice(0);
-          self.trendResults = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: '/'
-              },
-              lists: [{
-                title: 'Youtube trendy videos',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.videos.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: '/',
+    title: 'Youtube trendy videos'
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.doSearch = function(query, pageToken, deferred) {
+Youtube.prototype.doSearch = function (query) {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
     q: query,
@@ -891,105 +698,38 @@ Youtube.prototype.doSearch = function(query, pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.search.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      self.searchResults = self.searchResults.concat(self.processResponse(res.items, self.searchResults.length));
-
-      if (res.nextPageToken != undefined && self.canLoadFurtherItems(self.searchResults.length)) {
-        self.doSearch(query, res.nextPageToken, deferred);
-      } else {
-        if (self.searchResults.length > 0) {
-          var items = self.searchResults.slice(0);
-          self.searchResults = []; //clean up
-
-          deferred.resolve({
-            title: 'Youtube (found ' + items.length + ' videos)',
-            icon: 'fa fa-youtube',
-            availableListViews: ['list', 'grid'],
-            items: items
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  return self.youtubeRequest({
+    apiFunc: self.yt.search.list,
+    apiRequest: request,
+    loadAll: true,
+    title: 'Youtube Search Results',
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getPlaylist = function(playlistId, pageToken, deferred) {
+Youtube.prototype.getPlaylists = function (playlistIds) {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
 
   var request = {
-    id: playlistId.join(','),
+    id: playlistIds.join(','),
     part: "snippet",
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
-    request.pageToken = pageToken;
-  }
-
-  self.yt.playlists.list(request, function(err, res) {
-    if (err) {
-      self.logger.error(err.message + "\n" + err.stack);
-      deferred.reject(err);
-    } else {
-      // always load all playlist items
-      // dont call processResponse() here!
-      var videos = res.items;
-
-      for (var i = 0; i < videos.length; i++) {
-        self.playlists.push(self.parseResponseItemData(videos[i]));
-      }
-
-      if (res.nextPageToken != undefined) {
-        self.getPlaylist(playlistId, res.nextPageToken, deferred);
-      } else {
-        if (self.playlists.length > 0) {
-          var items = self.playlists.slice(0);
-          self.playlists = []; //clean up
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: 'youtube'
-              },
-              lists: [{
-                title: 'Youtube Playlists',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
-        } else {
-          deferred.resolve({});
-        }
-      }
-    }
+  // always load all playlists
+  return self.youtubeRequest({
+    apiFunc: self.yt.playlists.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: 'youtube',
+    title: 'Youtube Playlists'
   });
-
-  return deferred.promise;
 }
 
-Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
+Youtube.prototype.getPlaylistItems = function (playlistId) {
   var self = this;
-
-  if (deferred == null) {
-    deferred = libQ.defer();
-  }
+  var deferred = libQ.defer();
+  console.log('playlistid:', playlistId);
 
   var request = {
     playlistId: playlistId,
@@ -997,44 +737,65 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
     maxResults: 50
   };
 
-  if (pageToken != undefined) {
+  // always load all playlist items
+  return self.youtubeRequest({
+    apiFunc: self.yt.playlistItems.list,
+    apiRequest: request,
+    loadAll: true,
+    prevUri: 'youtube',
+    title: 'Youtube Playlist'
+  });
+}
+
+Youtube.prototype.youtubeRequest = function (request, cacheList, pageToken, deferred) {
+  var self = this;
+
+  if (!deferred) {
+    deferred = libQ.defer();
+  }
+
+  if (!cacheList) {
+    cacheList = [];
+  }
+
+  if (pageToken) {
     request.pageToken = pageToken;
   }
 
-  self.yt.playlistItems.list(request, function(err, res) {
+  request.apiFunc(request.apiRequest, function (err, res) {
     if (err) {
       self.logger.error(err.message + "\n" + err.stack);
       deferred.reject(err);
     } else {
-      // always load all playlist items
-      // dont call processResponse() here!
-      var videos = res.items;
-      for (var i = 0; i < videos.length; i++) {
-        self.playlistItems = self.playlistItems.concat(self.parseResponseItemData(videos[i]));
-      }
+      cacheList = cacheList.concat(request.plainResult
+        ? res.items
+        : self.processResponse(res.items, cacheList.length, request.loadAll));
 
-      if (res.nextPageToken != undefined) {
-        self.getPlaylistItems(playlistId, res.nextPageToken, deferred);
+      if (res.nextPageToken && self.canLoadFurtherItems(cacheList.length)) {
+        self.youtubeRequest(request, cacheList, res.nextPageToken, deferred);
       } else {
-        if (self.playlistItems.length > 0) {
-          var items = self.playlistItems.slice(0);
-          self.playlistItems = []; //clean up
-
-          deferred.resolve({
-            navigation: {
-              prev: {
-                uri: 'youtube'
-              },
-              lists: [{
-                title: 'Youtube Playlist - showing ' + items.length + ' videos',
-                icon: 'fa fa-youtube',
-                availableListViews: ['list', 'grid'],
-                items: items
-              }]
-            }
-          });
+        if (request.plainResult) {
+          deferred.resolve(cacheList);
         } else {
-          deferred.resolve({});
+          var listItem = {
+            title: request.title,
+            icon: 'fa fa-youtube',
+            availableListViews: ['list', 'grid'],
+            items: cacheList
+          };
+
+          if (request.prevUri) {
+            deferred.resolve({
+              navigation: {
+                prev: {
+                  uri: request.prevUri
+                },
+                lists: [listItem]
+              }
+            });
+          } else {
+            deferred.resolve(listItem)
+          }
         }
       }
     }
@@ -1043,10 +804,11 @@ Youtube.prototype.getPlaylistItems = function(playlistId, pageToken, deferred) {
   return deferred.promise;
 }
 
-Youtube.prototype.processResponse = function(items, numLoadedItems) {
+Youtube.prototype.processResponse = function (items, numLoadedItems, loadAll) {
   var self = this;
-  var loadItemsCount = self.calcItemsLimit(numLoadedItems, items.length);
   var parsedItems = [];
+
+  var loadItemsCount = loadAll ? items.length : self.calcItemsLimit(numLoadedItems, items.length);
   for (var i = 0; i < loadItemsCount; i++) {
     parsedItems.push(self.parseResponseItemData(items[i]));
   }
@@ -1054,12 +816,12 @@ Youtube.prototype.processResponse = function(items, numLoadedItems) {
   return parsedItems;
 }
 
-Youtube.prototype.canLoadFurtherItems = function(numOfCurrLoadedItems) {
+Youtube.prototype.canLoadFurtherItems = function (numOfCurrLoadedItems) {
   var self = this;
   return self.resultsLimit > numOfCurrLoadedItems;
 }
 
-Youtube.prototype.calcItemsLimit = function(numLoadedItems, numAvailableItems) {
+Youtube.prototype.calcItemsLimit = function (numLoadedItems, numAvailableItems) {
   var self = this;
   var loadVideos = self.canLoadFurtherItems(numLoadedItems) ?
     self.resultsLimit - numLoadedItems : 0;
@@ -1072,8 +834,9 @@ Youtube.prototype.calcItemsLimit = function(numLoadedItems, numAvailableItems) {
   return loadVideos;
 }
 
-Youtube.prototype.parseResponseItemData = function(item) {
-  var albumart;
+Youtube.prototype.parseResponseItemData = function (item) {
+  var albumart, url, type;
+
   if (item.snippet.thumbnails != null) {
     //try to get highest quality image first
     if (item.snippet.thumbnails.high !== null) {
@@ -1084,8 +847,6 @@ Youtube.prototype.parseResponseItemData = function(item) {
       albumart = item.snippet.thumbnails.default.url;
     }
   }
-
-  var url, type;
 
   // TODO rework and return null if something cannot be handled
   // TODO rework by reusing same code snippets by extracting them to methods
@@ -1106,7 +867,7 @@ Youtube.prototype.parseResponseItemData = function(item) {
             type = 'folder';
             break;
           case 'youtube#channel':
-            url = 'youtube/playlist/' + item.id.channelId;
+            url = 'youtube/channel/' + item.id.channelId;
             type = 'folder';
             break;
           default:
@@ -1151,7 +912,7 @@ Youtube.prototype.parseResponseItemData = function(item) {
   };
 }
 
-Youtube.prototype.updateSettings = function(data) {
+Youtube.prototype.updateSettings = function (data) {
   var self = this;
   var resultsLimit = data['results_limit'];
 
@@ -1166,7 +927,7 @@ Youtube.prototype.updateSettings = function(data) {
   return libQ.resolve();
 };
 
-Youtube.prototype.getAccessToken = function() {
+Youtube.prototype.getAccessToken = function () {
   var self = this;
   var deferred = libQ.defer();
 
@@ -1186,9 +947,9 @@ Youtube.prototype.getAccessToken = function() {
   };
 
   // Set up the request
-  var codeReq = https.request(options, function(res) {
+  var codeReq = https.request(options, function (res) {
     res.setEncoding('utf8');
-    res.on('data', function(chunk) {
+    res.on('data', function (chunk) {
       self.accessData = JSON.parse(chunk);
       deferred.resolve(self.accessData);
     });
@@ -1204,7 +965,7 @@ Youtube.prototype.getAccessToken = function() {
   return deferred.promise;
 }
 
-Youtube.prototype.pollPermissions = function() {
+Youtube.prototype.pollPermissions = function () {
   var self = this;
   var deferred = libQ.defer();
 
@@ -1226,14 +987,14 @@ Youtube.prototype.pollPermissions = function() {
   };
 
   // Set up the request
-  var codeReq = https.request(options, function(res) {
+  var codeReq = https.request(options, function (res) {
     res.setEncoding('utf8');
 
-    res.on('data', function(chunk) {
+    res.on('data', function (chunk) {
       var data = JSON.parse(chunk);
 
       if (res.statusCode == '200') {
-        fs.writeFile(path.join(__dirname, 'authToken.json'), chunk, function(err) {
+        fs.writeFile(path.join(__dirname, 'authToken.json'), chunk, function (err) {
           if (err) {
             self.logger.error("Could not save the authentication token!");
           }
@@ -1266,7 +1027,7 @@ Youtube.prototype.pollPermissions = function() {
   return deferred.promise;
 }
 
-Youtube.prototype.refreshAuthToken = function() {
+Youtube.prototype.refreshAuthToken = function () {
   var self = this;
   var deferred = libQ.defer();
 
@@ -1288,17 +1049,17 @@ Youtube.prototype.refreshAuthToken = function() {
   };
 
   // Set up the request
-  var codeReq = https.request(options, function(res) {
+  var codeReq = https.request(options, function (res) {
     res.setEncoding('utf8');
 
-    res.on('data', function(chunk) {
+    res.on('data', function (chunk) {
       var data = JSON.parse(chunk);
 
       if (res.statusCode == '200') {
         self.accessToken.expires_in = data.expires_in;
         self.accessToken.access_token = data.access_token;
 
-        fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify(self.accessToken), function(err) {
+        fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify(self.accessToken), function (err) {
           if (err) {
             self.logger.error('Could not write authToken file:' + err);
           }
@@ -1314,7 +1075,7 @@ Youtube.prototype.refreshAuthToken = function() {
         self.logger.info('Clearing authentication file!');
 
         self.commandRouter.pushToastMessage('error', data.error, data.error_description);
-        fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify({}), function(err) {
+        fs.writeFile(path.join(__dirname, 'authToken.json'), JSON.stringify({}), function (err) {
           if (err) {
             self.logger.error('Could not write authToken file:' + err);
           }
@@ -1334,9 +1095,8 @@ Youtube.prototype.refreshAuthToken = function() {
   return deferred.promise;
 }
 
-Youtube.prototype.updateYtApiAccessToken = function() {
+Youtube.prototype.updateYtApiAccessToken = function () {
   var self = this;
-
   var oauth2Client = new OAuth2Client(
     secrets.volumio.client_id,
     secrets.volumio.client_secret,
@@ -1351,6 +1111,6 @@ Youtube.prototype.updateYtApiAccessToken = function() {
   });
 }
 
-Youtube.prototype.isAccessGranted = function() {
+Youtube.prototype.isAccessGranted = function () {
   return token && token.refresh_token && token.access_token;
 }
