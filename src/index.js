@@ -848,8 +848,6 @@ Youtube.prototype.parseResponseItemData = function (item) {
     }
   }
 
-  // TODO rework and return null if something cannot be handled
-  // TODO rework by reusing same code snippets by extracting them to methods
   if (item.kind) {
     switch (item.kind) {
       case 'youtube#video':
@@ -905,7 +903,6 @@ Youtube.prototype.parseResponseItemData = function (item) {
     service: 'youtube',
     type: type,
     title: item.snippet.title,
-    // TODO: no channel title in subscriptions
     artist: item.snippet.channelTitle,
     albumart: albumart,
     uri: url
